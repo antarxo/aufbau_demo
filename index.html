@@ -2,150 +2,16 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Διαδραστική κατασκευή του Περιοδικού Πίνακα - Export Positions</title>
+  <title>Περιοδικός Πίνακας - Εξαγωγή Θέσεων</title>
   <link rel="icon" href="data:,">
-  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <style>
-    :root { --rightPanelWidth: 150px; }
     body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      overflow: hidden;
+      font-family: Arial, sans-serif;
       background: #f7f7f7;
-    }
-    #title {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 24px;
-      font-weight: bold;
-      z-index: 50;
-    }
-    /* Καντίνες καμβάδων και panels – βασικά στυλ, όπως στον υπάρχοντα κώδικα */
-    #canvasTableBackground {
-      position: absolute;
-      background: white;
-      border: 1px solid rgba(0,0,0,0.15);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: -10;
-      transition: width 0.5s ease, height 0.5s ease, left 0.5s ease, top 0.5s ease;
-    }
-    #canvasPeriods {
-      position: absolute;
-      left: 31px;
-      top: 120px;
-      width: 42px;
-      height: 292px;
-      background: #f0f0f0;
-      display: none;
-      z-index: 5;
-      border: 1px solid rgba(0,0,0,0.2);
-      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-      transition: all 0.5s ease-in-out;
-    }
-    .canvas {
-      position: absolute;
-      background: transparent;
-      transition: all 0.5s ease-in-out;
-      transform: translateY(-10px);
-    }
-    /* Panels */
-    #infoPanelFull, #infoPanelCollapsed {
-      position: absolute;
-      width: calc(100vw - var(--rightPanelWidth) - 105px);
+      margin: 0;
       padding: 20px;
-      background: rgba(255,255,255,0.95);
-      border: 2px solid #333;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      transition: left 0.8s ease, top 0.8s ease, opacity 0.8s ease;
     }
-    #infoPanelFull {
-      left: 20px;
-      top: 443px;
-      opacity: 1;
-      z-index: 40;
-    }
-    #infoPanelCollapsed {
-      left: 858px;
-      top: 112px;
-      opacity: 0;
-      z-index: 100;
-      pointer-events: none;
-    }
-    body.collapsed #infoPanelFull {
-      left: 858px;
-      top: 112px;
-      opacity: 0;
-      pointer-events: none;
-    }
-    body.collapsed #infoPanelCollapsed {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    #leftPanelFull { width: 200px; }
-    #remarksFull { width: calc(100% - 200px); }
-    #remarksFull .upper-right { display: flex; flex-direction: row; }
-    #remarksFull .upper-right > .subshells-col { width: 70%; text-align: left; }
-    #remarksFull .upper-right > .shells-msg-col { width: 30%; text-align: left; }
-    #leftPanelCollapsed, #remarksCollapsed { width: 100%; }
-    #remarksCollapsed .right-wrapper { display: flex; flex-direction: column; }
-    #canvasSubshells {
-      position: absolute;
-      background: rgba(255,255,255,0.95);
-      border: 1px solid #333;
-      border-radius: 10px;
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-      padding: 10px;
-      z-index: 150;
-      transition: all 0.2s ease;
-    }
-    /* Group canvases – θέσεις όπως στο αρχικό ptable good */
-    #canvasS_groups { left: 75px; top: 78px; }
-    #canvasD_groups { left: 164px; top: 78px; }
-    #canvasP_groups { left: 584px; top: 78px; }
-    /* Buttons */
-    #buttonPanel {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    button {
-      background-color: #008CBA;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 1em;
-      transition: background-color 0.3s;
-    }
-    button:hover { background-color: #005f75; }
-    #toggleFBlock.active { background-color: #e68a00; }
-    /* Full mode διατάξεις (σύμφωνα με ptable good) */
-    .full #canvasS { top: 120px; left: 75px; z-index: 1; }
-    .full #canvasF { top: 120px; left: 159px; width: 588px; z-index: 2; }
-    .full #canvasD { top: 120px; left: 159px; width: 420px; z-index: 3; }
-    .full #canvasP { top: 120px; left: 159px; width: 252px; z-index: 4; }
-    body.collapsed #canvasF { top: 220px; }
-    /* Debug Panel */
-    #debugPanel {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-family: monospace;
-      z-index: 300;
-    }
-    /* Κουμπί εξαγωγής */
     #exportPositions {
       position: fixed;
       bottom: 20px;
@@ -157,32 +23,41 @@
       border-radius: 5px;
       cursor: pointer;
       font-size: 1em;
-      z-index: 350;
+      z-index: 10;
+    }
+    #buttonPanel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 5px;
+    }
+    button {
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    button:hover { background-color: #005f75; }
+    #debugPanel {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      z-index: 300;
     }
   </style>
 </head>
 <body class="full">
-  <div id="title">Διαδραστική κατασκευή του Περιοδικού Πίνακα</div>
-  <div id="canvasTableBackground"></div>
-  <div id="canvasPeriods" class="canvas"></div>
-  <div id="canvasS" class="canvas"></div>
-  <div id="canvasF" class="canvas"></div>
-  <div id="canvasD" class="canvas"></div>
-  <div id="canvasP" class="canvas"></div>
   
-  <div id="canvasS_groups" class="canvas"></div>
-  <div id="canvasD_groups" class="canvas"></div>
-  <div id="canvasP_groups" class="canvas"></div>
-  
-  <div id="infoPanelFull">
-    <div id="leftPanelFull"></div>
-    <div id="remarksFull"></div>
-  </div>
-  <div id="infoPanelCollapsed">
-    <div id="leftPanelCollapsed"></div>
-    <div id="remarksCollapsed"></div>
-  </div>
-  <div id="canvasSubshells" class="canvas"></div>
+  <h1>Περιοδικός Πίνακας - Εξαγωγή Θέσεων</h1>
   
   <div id="buttonPanel">
     <button id="nextElement">Επόμενο</button>
@@ -190,184 +65,80 @@
     <button id="toggleFBlock">Σύμπτυξη</button>
     <button id="reset">Reset</button>
   </div>
-  
-  <!-- Κουμπί εξαγωγής θέσεων -->
+
   <button id="exportPositions">Export Positions</button>
-  
+
   <div id="debugPanel">currentZ: 0</div>
-  
+
   <script>
-    // Βοηθητικές συναρτήσεις
-    function debounce(func, wait) {
-      let timeout;
-      return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-      };
-    }
-    function formatShells(shellsStr) {
-      if (!shellsStr) return "";
-      let shellNumbers = shellsStr.split(",").map(s => s.trim());
-      const labels = ["K", "L", "M", "N", "O", "P", "Q"];
-      let result = [];
-      for (let i = 0; i < shellNumbers.length; i++){
-        let text = labels[i] + "(" + shellNumbers[i] + ")";
-        if(i === shellNumbers.length - 1){ text = "<strong>" + text + "</strong>"; }
-        result.push(text);
+    document.addEventListener("DOMContentLoaded", function() {
+      
+      let elements = [];
+      let currentZ = 0;
+
+      function calculatePosition(e) {
+        return { x: (e.col - 1) * 42, y: (e.row - 1) * 42 };
       }
-      return result.join(", ");
-    }
-    function messageForElement(element) {
-      if (element.block === 'f') {
-        return (element.row === 6) ? "Λανθανίδα" : "Ακτινίδα";
-      } else {
-        let group = parseInt(element.col);
-        if (group === 1) {
-          return (element.number === 1) ? "Θέλει να πάρει 1 ηλεκτρόνιο" : "Θέλει να δώσει 1 ηλεκτρόνιο";
-        } else if (group === 2) {
-          return `Θέλει να δώσει ${group} ηλεκτρόνια`;
-        } else if (group === 13) {
-          return `Θέλει να δώσει ${group - 10} ηλεκτρόνια`;
-        } else if (group >= 3 && group <= 12) {
-          return "Στοιχείο μετάπτωσης";
-        } else if (group === 14) {
-          return "Θέλει να δώσει ή να πάρει 4 ηλεκτρόνια";
-        } else if (group >= 15 && group <= 17) {
-          return `Θέλει να πάρει ${18 - group} ηλεκτρόνια`;
-        } else if (group === 18) {
-          return "Ευγενές αέριο - Χημικά αδρανές";
-        }
-        return "";
-      }
-    }
-    
-    // Ρυθμίσεις και μεταβλητές p5.js
-    let elements = []; // Αυτός ο πίνακας θα φορτωθεί από το elements.json (118 στοιχεία)
-    let currentZ = 0;
-    window.BLOCKS_CONFIG = {
-      s: { cols: 2, rows: 7 },
-      p: { cols: 6, rows: 7 },
-      d: { cols: 10, rows: 7 },
-      f: { cols: 14, rows: 7 }
-    };
-    window.BLOCK_COLORS = {
-      s: "#FF477E",
-      p: "#26FF31",
-      d: "#3F99FF",
-      f: "#FFD051"
-    };
-    window.getBlockColor = function(b) {
-      if(b === "dummy") return "gray";
-      switch(b) {
-        case "s": return "#FF477E";
-        case "p": return "#26FF31";
-        case "d": return "#3F99FF";
-        case "f": return "#FFD051";
-        default: return "black";
-      }
-    };
-    function updateToggleButton() {
-      document.getElementById('toggleFBlock').disabled = false;
-    }
-    function updateDebugPanel() {
-      let dbg = document.getElementById("debugPanel");
-      if(dbg) dbg.textContent = "currentZ: " + currentZ;
-    }
-    function logCurrentZ(context) {
-      console.log(context, "currentZ:", currentZ);
-      updateDebugPanel();
-    }
-    
-    // Συνάρτηση υπολογισμού θέσης – βασισμένη στον υπάρχοντα κώδικα
-    function calculatePosition(e, block) {
-      let x = 0, y = (e.row - 1) * 42;
-      if(block === 's') { 
-        x = (e.col - 1) * 42; 
-      } else if(block === 'f' || block === 'd') { 
-        x = (e.col - 3) * 42; 
-      } else if(block === 'p') {
-        if(currentZ < 20 && e.row === 1) { 
-          x = (e.col - 18) * 42; 
-        } else { 
-          x = (e.col - 13) * 42; 
-        }
-      }
-      return { x, y };
-    }
-    
-    // Νέα διαδικασία παραγωγής θέσεων για την τρέχουσα κατάσταση
-    function producePositionsForState(state) {
-      let posData = {};
-      elements.forEach(e => {
-        let canvasEl = document.getElementById("canvas" + e.block.toUpperCase());
-        if (!canvasEl) return;
-        let rect = canvasEl.getBoundingClientRect();
-        let pos = calculatePosition(e, e.block);
-        if(state === "collapsed") {
+
+      function producePositionsForState(state) {
+        let posData = {};
+        elements.forEach(e => {
+          let pos = calculatePosition(e);
+          let adjustment = (state === "collapsed") ? -7 : 0;
           posData[e.number] = {
-            x: rect.left + pos.x - 7,  // μετατόπιση -7 px για collapsed
-            y: rect.top + pos.y - 7,
+            x: pos.x + adjustment,
+            y: pos.y + adjustment,
             width: 40,
             height: 40
           };
-        } else { // full
-          posData[e.number] = {
-            x: rect.left + pos.x,
-            y: rect.top + pos.y,
-            width: 40,
-            height: 40
-          };
-        }
+        });
+        return posData;
+      }
+
+      function exportPositionsForCurrentState() {
+        let state = document.body.classList.contains("collapsed") ? "collapsed" : "full";
+        let positions = {};
+        positions[state] = producePositionsForState(state);
+        downloadJSON(positions, `positions_${state}.json`);
+      }
+
+      function downloadJSON(data, filename) {
+        let jsonString = JSON.stringify(data, null, 2);
+        let blob = new Blob([jsonString], { type: "application/json" });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      document.getElementById("exportPositions").addEventListener("click", exportPositionsForCurrentState);
+      document.getElementById("toggleFBlock").addEventListener("click", function() {
+        document.body.classList.toggle("collapsed");
       });
-      return posData;
-    }
-    
-    // Συνάρτηση εξαγωγής θέσεων για την τρέχουσα κατάσταση και δημιουργία JSON αρχείου
-    function exportPositionsForCurrentState() {
-      let state = document.body.classList.contains('collapsed') ? "collapsed" : "full";
-      let positions = {};
-      positions[state] = producePositionsForState(state);
-      downloadJSON(positions, "positions_" + state + ".json");
-    }
-    
-    // Συνάρτηση δημιουργίας και κατεβάσματος του JSON αρχείου
-    function downloadJSON(data, filename) {
-      let jsonString = JSON.stringify(data, null, 2);
-      let blob = new Blob([jsonString], { type: "application/json" });
-      let url = URL.createObjectURL(blob);
-      let a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    
-    // Ενσωμάτωση του κουμπιού εξαγωγής θέσεων
-    document.getElementById("exportPositions").addEventListener("click", exportPositionsForCurrentState);
-    
-    // Δείγμα χειριστών για τα κουμπιά (Next, FillAll, Toggle, Reset)
-    document.getElementById('nextElement').addEventListener('click', function() {
-      if(currentZ < 3) { currentZ = 3; }
-      else if(currentZ < 118) { currentZ++; }
-      else if(currentZ === 118) { currentZ = 119; }
-      else if(currentZ === 119) { currentZ = 120; }
-      else if(currentZ === 120) { currentZ = 121; }
-      else if(currentZ === 121) { currentZ = 122; }
-      logCurrentZ("Next Button Click:");
-      // Εδώ θα ενσωματώσεις τις κλήσεις ανανέωσης του UI (π.χ. redraw, updateInfo)
-    });
-    
-    // Για το παράδειγμα, ο κώδικας φόρτωσης των στοιχείων γίνεται μέσω fetch
-    function loadElements() {
+
+      document.getElementById("nextElement").addEventListener("click", function() {
+        if (currentZ < 118) currentZ++;
+        document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
+      });
+
+      document.getElementById("fillAll").addEventListener("click", function() {
+        console.log("Fill All Clicked");
+      });
+
+      document.getElementById("reset").addEventListener("click", function() {
+        currentZ = 0;
+        document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
+      });
+
       fetch('elements.json')
         .then(response => response.json())
-        .then(data => {
-          elements = data; // Το elements.json πρέπει να περιέχει τα 118 στοιχεία με πεδία όπως number, row, col, block κλπ.
-          // Εκκίνηση αρχικοποίησης (initializeCanvases, initSubshellsCanvas, κλπ.) με βάση τον υπάρχοντα κώδικα.
-        })
+        .then(data => { elements = data; })
         .catch(err => console.error('Error loading elements:', err));
-    }
-    loadElements();
+
+    });
   </script>
+
 </body>
 </html>
