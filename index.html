@@ -2,37 +2,88 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Περιοδικός Πίνακας - Export Positions Test</title>
+  <title>Διαδραστική κατασκευή του Περιοδικού Πίνακα</title>
+  <!-- favicon και fonts -->
   <link rel="icon" href="data:,">
-  <!-- Περιλαμβάνουμε p5.js για να διατηρήσουμε τη συμβατότητα (αν και εδώ χρησιμοποιούμε dummy στοιχεία) -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <!-- p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <style>
-    /* Βασικά στυλ για δοκιμή */
+    :root { --rightPanelWidth: 150px; }
     body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
+      font-family: 'Roboto', sans-serif;
       margin: 0;
-      padding: 0;
+      overflow: hidden;
+      background: #f7f7f7;
     }
+    /* Τίτλος */
     #title {
-      text-align: center;
-      margin: 20px;
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 24px;
       font-weight: bold;
+      z-index: 50;
     }
-    /* Dummy divs για καμβάδες */
-    .canvas {
-      position: absolute;
-      border: 1px solid #ccc;
-    }
+    /* Background (παραμένει όπως στον αρχικό κώδικα) */
     #canvasTableBackground {
       position: absolute;
       background: white;
-      border: 1px solid #999;
+      border: 1px solid rgba(0,0,0,0.15);
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       z-index: -10;
+      transition: width 0.5s ease, height 0.5s ease, left 0.5s ease, top 0.5s ease;
     }
-    /* Buttons */
+    /* Καμβάδες στοιχείων */
+    /* Οι καμβάδες για τα στοιχεία (S, F, D, P, Periods) και οι ομαδικοί καμβάδες παραμένουν όπως στον αρχικό κώδικα */
+    #canvasPeriods, #canvasS, #canvasF, #canvasD, #canvasP,
+    #canvasS_groups, #canvasD_groups, #canvasP_groups, 
+    #canvasSubshells {
+      position: absolute;
+      background: transparent;
+      transition: all 0.5s ease-in-out;
+      transform: translateY(-10px);
+    }
+    /* Panels (Full και Collapsed) */
+    #infoPanelFull, #infoPanelCollapsed {
+      position: absolute;
+      width: calc(100vw - var(--rightPanelWidth) - 105px);
+      padding: 20px;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: left 0.8s ease, top 0.8s ease, opacity 0.8s ease;
+    }
+    #infoPanelFull {
+      left: 20px;
+      top: 443px;
+      opacity: 1;
+      z-index: 40;
+    }
+    #infoPanelCollapsed {
+      left: 858px;
+      top: 112px;
+      opacity: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
+    body.collapsed #infoPanelFull {
+      left: 858px;
+      top: 112px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    body.collapsed #infoPanelCollapsed {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Ομαδικοί καμβάδες */
+    #canvasS_groups { left: 75px; top: 78px; }
+    #canvasD_groups { left: 164px; top: 78px; }
+    #canvasP_groups { left: 584px; top: 78px; }
+    /* Buttons Panel */
     #buttonPanel {
       position: fixed;
       bottom: 20px;
@@ -43,24 +94,17 @@
       z-index: 200;
     }
     button {
-      padding: 10px 15px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    /* Κουμπί εξαγωγής */
-    #exportPositions {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background-color: #4CAF50;
+      background-color: #008CBA;
       color: white;
       border: none;
       padding: 10px 15px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
-      z-index: 300;
+      font-size: 1em;
+      transition: background-color 0.3s;
     }
+    button:hover { background-color: #005f75; }
+    #toggleFBlock.active { background-color: #e68a00; }
     /* Debug Panel */
     #debugPanel {
       position: fixed;
@@ -71,14 +115,35 @@
       padding: 5px 10px;
       border-radius: 4px;
       font-family: monospace;
+      z-index: 300;
+    }
+    /* Κουμπί εξαγωγής θέσεων */
+    #exportPositions {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
       z-index: 350;
     }
+    /* Διατάξεις Full mode όπως στο αρχικό ptable good */
+    .full #canvasS { top: 120px; left: 75px; z-index: 1; }
+    .full #canvasF { top: 120px; left: 159px; width: 588px; z-index: 2; }
+    .full #canvasD { top: 120px; left: 159px; width: 420px; z-index: 3; }
+    .full #canvasP { top: 120px; left: 159px; width: 252px; z-index: 4; }
+    body.collapsed #canvasF { top: 220px; }
+    /* ... (ο υπόλοιπος αρχικός κώδικας, που περιέχει 800 γραμμές, παραμένει αμετάβλητος) ... */
   </style>
 </head>
 <body class="full">
-  <div id="title">Περιοδικός Πίνακας - Export Positions Test</div>
+  <div id="title">Διαδραστική κατασκευή του Περιοδικού Πίνακα</div>
   
-  <!-- Dummy divs που προσομοιώνουν τους καμβάδες της εφαρμογής -->
+  <!-- Αρχικός κώδικας για τους καμβάδες και τα panels -->
   <div id="canvasTableBackground"></div>
   <div id="canvasPeriods" class="canvas"></div>
   <div id="canvasS" class="canvas"></div>
@@ -86,38 +151,59 @@
   <div id="canvasD" class="canvas"></div>
   <div id="canvasP" class="canvas"></div>
   
-  <!-- Dummy ομαδικοί καμβάδες -->
   <div id="canvasS_groups" class="canvas"></div>
   <div id="canvasD_groups" class="canvas"></div>
   <div id="canvasP_groups" class="canvas"></div>
   
-  <!-- Panels (δείκτης, δεν χρησιμοποιούνται για το export εδώ) -->
-  <div id="infoPanelFull"></div>
-  <div id="infoPanelCollapsed"></div>
+  <div id="infoPanelFull">
+    <div id="leftPanelFull"></div>
+    <div id="remarksFull"></div>
+  </div>
+  <div id="infoPanelCollapsed">
+    <div id="leftPanelCollapsed"></div>
+    <div id="remarksCollapsed"></div>
+  </div>
+  
   <div id="canvasSubshells" class="canvas"></div>
   
-  <!-- Κουμπιά -->
+  <!-- Αρχικός κώδικας για τα κουμπιά -->
   <div id="buttonPanel">
-    <button id="nextElement">Next</button>
-    <button id="fillAll">Fill All</button>
-    <button id="toggleFBlock">Toggle</button>
+    <button id="nextElement">Επόμενο</button>
+    <button id="fillAll">Συμπλήρωσε</button>
+    <button id="toggleFBlock">Σύμπτυξη</button>
     <button id="reset">Reset</button>
   </div>
   
-  <!-- Κουμπί Εξαγωγής Θέσεων -->
+  <!-- Νέο κουμπί εξαγωγής θέσεων -->
   <button id="exportPositions">Export Positions</button>
   
   <div id="debugPanel">currentZ: 0</div>
   
   <script>
-    // Περιμένουμε το DOMContentLoaded για να είναι όλα έτοιμα
+    // Όλες οι event listeners και οι βοηθητικές συναρτήσεις δεσμεύονται αφού έχει φορτωθεί πλήρως το DOM
     document.addEventListener("DOMContentLoaded", function() {
-
-      // Δημιουργούμε dummy δεδομένα για 118 στοιχεία.
-      // Κάθε στοιχείο έχει: number, row, col, block.
-      // row = ((number-1) mod 7) + 1, col = floor((number-1)/7)+1, block = "s"
+      
+      // --- Βοηθητικές συναρτήσεις ---
+      function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      }
+      function updateDebugPanel() {
+        let dbg = document.getElementById("debugPanel");
+        if(dbg) dbg.textContent = "currentZ: " + currentZ;
+      }
+      function logCurrentZ(context) {
+        console.log(context, "currentZ:", currentZ);
+        updateDebugPanel();
+      }
+      
+      // --- Dummy Data για τα 118 στοιχεία (τα στοιχεία φορτώνονται κανονικά στο πραγματικό αρχείο elements.json) ---
       let elements = [];
       for (let n = 1; n <= 118; n++) {
+        // Για το παράδειγμα θεωρούμε ότι κάθε στοιχείο έχει πεδία: number, row, col, block
         elements.push({
           number: n,
           row: ((n - 1) % 7) + 1,
@@ -128,7 +214,8 @@
       
       let currentZ = 0;
       
-      // Η συνάρτηση calculatePosition για block "s": x = (col-1)*42, y = (row-1)*42
+      // --- Συνάρτηση calculatePosition ---
+      // Για block "s": x = (col-1)*42, y = (row-1)*42
       function calculatePosition(e, block) {
         if(block === "s") {
           return { x: (e.col - 1) * 42, y: (e.row - 1) * 42 };
@@ -136,13 +223,14 @@
         return { x: 0, y: 0 };
       }
       
-      // Συνάρτηση παραγωγής θέσεων για την τρέχουσα κατάσταση (full ή collapsed)
-      // Οι θέσεις βασίζονται στο dummy div "canvasS". Για δοκιμή, τοποθετούμε το "canvasS" στην θέση (100, 100).
+      // --- Λειτουργία εξαγωγής θέσεων ---
+      // Παράγει τις θέσεις για την τρέχουσα κατάσταση (full ή collapsed) βάσει των θέσεων που έχουν τοποθετηθεί στο DOM.
+      // Στο παράδειγμα, υποθέτουμε ότι ο καμβάς "canvasS" (που χρησιμοποιείται για τα στοιχεία block "s") έχει dummy offset (π.χ. 100,100)
       function producePositionsForState(state) {
         let posData = {};
         let canvasEl = document.getElementById("canvasS");
         if (!canvasEl) return posData;
-        // Ανάθεση dummy getBoundingClientRect για το canvasS
+        // Αντικαθιστούμε το getBoundingClientRect με dummy τιμές για δοκιμή
         canvasEl.getBoundingClientRect = function() {
           return { left: 100, top: 100, right: 100 + 42*32, bottom: 100 + 42*7 };
         };
@@ -167,7 +255,7 @@
         return posData;
       }
       
-      // Συνάρτηση εξαγωγής θέσεων για το τρέχον state (full ή collapsed)
+      // Συνάρτηση εξαγωγής για την τρέχουσα κατάσταση
       function exportPositionsForCurrentState() {
         let state = document.body.classList.contains("collapsed") ? "collapsed" : "full";
         let positions = {};
@@ -175,7 +263,7 @@
         downloadJSON(positions, "positions_" + state + ".json");
       }
       
-      // Συνάρτηση που κατεβάζει το JSON ως αρχείο
+      // Συνάρτηση δημιουργίας και κατέβασματος του JSON αρχείου
       function downloadJSON(data, filename) {
         let jsonString = JSON.stringify(data, null, 2);
         let blob = new Blob([jsonString], { type: "application/json" });
@@ -187,32 +275,39 @@
         URL.revokeObjectURL(url);
       }
       
-      // Δέσιμο του event listener για το κουμπί εξαγωγής
+      // --- Δέσιμο event listener για το κουμπί εξαγωγής ---
       document.getElementById("exportPositions").addEventListener("click", exportPositionsForCurrentState);
       
-      // Παράδειγμα χειριστών για τα υπόλοιπα κουμπιά (Next, Toggle, Fill All, Reset)
+      // --- Παράδειγμα χειριστών για τα υπόλοιπα κουμπιά (Next, Toggle, Fill All, Reset) ---
       document.getElementById("nextElement").addEventListener("click", function() {
-        if (currentZ < 118) currentZ++;
-        document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
+        if(currentZ < 118) currentZ++;
+        logCurrentZ("Next Button Click:");
       });
       
       document.getElementById("toggleFBlock").addEventListener("click", function() {
         document.body.classList.toggle("collapsed");
+        logCurrentZ("Toggle Button Click:");
       });
       
       document.getElementById("fillAll").addEventListener("click", function() {
-        console.log("Fill All clicked");
+        console.log("Fill All Button Click");
       });
       
       document.getElementById("reset").addEventListener("click", function() {
         currentZ = 0;
-        document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
+        logCurrentZ("Reset Button Click:");
       });
       
-      // Εμφάνιση στο console για έλεγχο
-      console.log("Dummy elements loaded: " + elements.length);
+      // --- Φόρτωση πραγματικών στοιχείων ---
+      // Στο πραγματικό σύστημα θα φορτώνονται μέσω fetch από το elements.json.
+      // Για το παρόν παράδειγμα, χρησιμοποιούμε τα dummy δεδομένα που δημιουργήσαμε.
       
-    });
+      console.log("Loaded elements: " + elements.length);
+      
+      // --- Ενσωματώστε εδώ τον υπόλοιπο αρχικό κώδικα (initializeCanvases, drawElements, updateInfo, κλπ.) που ανήκει στον πλήρη κώδικα της εφαρμογής.
+      /* ... ΑΡΧΙΚΟΣ ΚΩΔΙΚΑΣ ΕΦΑΡΜΟΓΗΣ (περίπου 800 γραμμές) ... */
+      
+    }); // DOMContentLoaded
   </script>
 </body>
 </html>
