@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <title>Διαδραστική κατασκευή του Περιοδικού Πίνακα - Export Positions</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <style>
+    /* Βασικά στυλ όπως στον υπάρχοντα κώδικα */
+    :root { --rightPanelWidth: 150px; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      overflow: hidden;
+      background: #f7f7f7;
+    }
+    /* ... (τα υπόλοιπα στυλ που έχεις ήδη, π.χ. για τους καμβάδες, panels κλπ.) ... */
+    /* Στυλ για το κουμπί εξαγωγής */
+    #exportPositions {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      z-index: 300;
+    }
+  </style>
+</head>
+<body class="full">
+  <!-- Οι καμβάδες, τα panels, κλπ. όπως στον υπάρχοντα κώδικα -->
+  <div id="canvasTableBackground"></div>
+  <div id="canvasPeriods" class="canvas"></div>
+  <div id="canvasS" class="canvas"></div>
+  <div id="canvasF" class="canvas"></div>
+  <div id="canvasD" class="canvas"></div>
+  <div id="canvasP" class="canvas"></div>
+  
+  <div id="canvasS_groups" class="canvas"></div>
+  <div id="canvasD_groups" class="canvas"></div>
+  <div id="canvasP_groups" class="canvas"></div>
+  
+  <div id="infoPanelFull">
+    <div id="leftPanelFull"></div>
+    <div id="remarksFull"></div>
+  </div>
+  <div id="infoPanelCollapsed">
+    <div id="leftPanelCollapsed"></div>
+    <div id="remarksCollapsed"></div>
+  </div>
+  <div id="canvasSubshells" class="canvas"></div>
+  
+  <div id="buttonPanel">
+    <button id="nextElement">Επόμενο</button>
+    <button id="fillAll">Συμπλήρωσε</button>
+    <button id="toggleFBlock">Σύμπτυξη</button>
+    <button id="reset">Reset</button>
+  </div>
+  
+  <!-- Το νέο κουμπί εξαγωγής -->
+  <button id="exportPositions">Export Positions</button>
+  
+  <div id="debugPanel">currentZ: 0</div>
+  
+  <script>
+    // Βοηθητικές συναρτήσεις (π.χ., debounce, formatShells, messageForElement, κλπ.)
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+    function formatShells(shellsStr) {
+      if (!shellsStr) return "";
+      let shellNumbers = shellsStr.split(",").map(s => s.trim());
+      const labels = ["K", "L", "M", "N", "O", "P", "Q"];
+      let result = [];
+      for (let i = 0; i < shellNumbers.length; i++){
+        let text = labels[i] + "(" + shellNumbers[i] + ")";
+        if(i === shellNumbers.length - 1){ text = "<strong>" + text + "</strong>"; }
+        result.push(text);
+      }
+      return result.join(", ");
+    }
+    function messageForElement(element) {
+      if (element.block === 'f') {
+        return (element.row === 6) ? "Λανθανίδα" : "Ακτινίδα";
+      } else {
+        let group = parseInt(element.col);
+        if (group === 1) {
+          return (element.number === 1) ? "Θέλει να πάρει 1 ηλεκτρόνιο" : "Θέλει να δώσει 1 ηλεκτρόνιο";
+        } else if (group === 2) {
+          return `Θέλει να δώσει ${group} ηλεκτρόνια`;
+        } else if (group === 13) {
+          return `Θέλει να δώσει ${group - 10} ηλεκτρόνια`;
+        } else if (group >= 3 && group <= 12) {
+          return "Στοιχείο μετάπτωσης";
+        } else if (group === 14) {
+          return "Θέλει να δώσει ή να πάρει 4 ηλεκτρόνια";
+        } else if (group >= 15 && group <= 17) {
+          return `Θέλει να πάρει ${18 - group} ηλεκτρόνια`;
+        } else if (group === 18) {
+          return "Ευγενές αέριο - Χημικά αδρανές";
+        }
+        return "";
+      }
+    }
+    
+    // Ορισμός μεταβλητών και ρυθμίσεων για το p5.js
+    let elements = []; // Θα φορτωθεί (π.χ., μέσω fetch στο elements.json)
+    let currentZ = 0;
+    window.BLOCKS_CONFIG = {
+      s: { cols: 2, rows: 7 },
+      p: { cols: 6, rows: 7 },
+      d: { cols: 10, rows: 7 },
+      f: { cols: 14, rows: 7 }
+    };
+    window.BLOCK_COLORS = {
+      s: "#FF477E",
+      p: "#26FF31",
+      d: "#3F99FF",
+      f: "#FFD051"
+    };
+    window.getBlockColor = function(b) {
+      if(b === "dummy") return "gray";
+      switch(b) {
+        case "s": return "#FF477E";
+        case "p": return "#26FF31";
+        case "d": return "#3F99FF";
+        case "f": return "#FFD051";
+        default: return "black";
+      }
+    };
+    function updateToggleButton() {
+      document.getElementById('toggleFBlock').disabled = false;
+    }
+    function updateDebugPanel() {
+      let dbg = document.getElementById("debugPanel");
+      if(dbg) dbg.textContent = "currentZ: " + currentZ;
+    }
+    function logCurrentZ(context) {
+      console.log(context, "currentZ:", currentZ);
+      updateDebugPanel();
+    }
+    
+    // Συνάρτηση υπολογισμού θέσης (όπως στον υπάρχοντα κώδικα)
+    function calculatePosition(e, block) {
+      let x = 0, y = (e.row - 1) * 42;
+      if(block === 's') { x = (e.col - 1) * 42; }
+      else if(block === 'f' || block === 'd') { x = (e.col - 3) * 42; }
+      else if(block === 'p') {
+        if(currentZ < 20 && e.row === 1) { x = (e.col - 18) * 42; }
+        else { x = (e.col - 13) * 42; }
+      }
+      return { x, y };
+    }
+    
+    // Νέα συνάρτηση παραγωγής θέσεων για την τρέχουσα κατάσταση
+    function producePositionsForState(state) {
+      let posData = {};
+      elements.forEach(e => {
+        let canvasEl = document.getElementById("canvas" + e.block.toUpperCase());
+        if (!canvasEl) return;
+        let rect = canvasEl.getBoundingClientRect();
+        let pos = calculatePosition(e, e.block);
+        if(state === "collapsed") {
+          // Αν collapsed, εφαρμόζουμε την αντίστοιχη μετατόπιση (εδώ, όπως ζητήθηκε, δεν αλλάζουν οι διαστάσεις των κελιών)
+          posData[e.number] = {
+            x: rect.left + pos.x - 7,  // μετατόπιση -7 px
+            y: rect.top + pos.y - 7,
+            width: 40,
+            height: 40
+          };
+        } else { // full
+          posData[e.number] = {
+            x: rect.left + pos.x,
+            y: rect.top + pos.y,
+            width: 40,
+            height: 40
+          };
+        }
+      });
+      return posData;
+    }
+    
+    // Συνάρτηση λήψης του τρέχοντος state και δημιουργίας JSON για αυτό
+    function exportPositionsForCurrentState() {
+      let state = document.body.classList.contains('collapsed') ? "collapsed" : "full";
+      let positions = {};
+      positions[state] = producePositionsForState(state);
+      downloadJSON(positions, "positions_" + state + ".json");
+    }
+    
+    // Συνάρτηση που δημιουργεί και κατεβάζει το JSON αρχείο
+    function downloadJSON(data, filename) {
+      let jsonString = JSON.stringify(data, null, 2);
+      let blob = new Blob([jsonString], { type: "application/json" });
+      let url = URL.createObjectURL(blob);
+      let a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    // Ενσωμάτωση κουμπιού εξαγωγής
+    document.getElementById("exportPositions").addEventListener("click", exportPositionsForCurrentState);
+    
+    // (Οι υπόλοιποι χειριστές κουμπιών (Next, FillAll, Toggle, Reset) και η λογική της εφαρμογής παραμένουν όπως στο υπάρχον σύστημα.)
+    document.getElementById('nextElement').addEventListener('click', function() {
+      if(currentZ < 3) { currentZ = 3; }
+      else if(currentZ < 118) { currentZ++; }
+      else if(currentZ === 118) { currentZ = 119; }
+      else if(currentZ === 119) { currentZ = 120; }
+      else if(currentZ === 120) { currentZ = 121; }
+      else if(currentZ === 121) { currentZ = 122; }
+      logCurrentZ("Next Button Click:");
+      // Ανανεώνουμε το UI (π.χ., window.redrawAll(), updateInfo, κλπ.)
+    });
+    
+    // Φόρτωση των στοιχείων (π.χ., μέσω fetch στο elements.json)
+    function loadElements() {
+      fetch('elements.json')
+        .then(response => response.json())
+        .then(data => {
+          elements = data; // Το elements.json πρέπει να περιέχει τα δεδομένα για 118 στοιχεία
+          // Εκκίνηση της αρχικοποίησης (π.χ., initializeCanvases, initSubshellsCanvas, κλπ.)
+        })
+        .catch(err => console.error('Error loading elements:', err));
+    }
+    loadElements();
+  </script>
+</body>
+</html>
