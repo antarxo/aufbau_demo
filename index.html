@@ -2,16 +2,52 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Περιοδικός Πίνακας - Εξαγωγή Θέσεων</title>
+  <title>Περιοδικός Πίνακας - Export Positions Test</title>
   <link rel="icon" href="data:,">
+  <!-- Περιλαμβάνουμε p5.js για να διατηρήσουμε τη συμβατότητα (αν και εδώ χρησιμοποιούμε dummy στοιχεία) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
   <style>
+    /* Βασικά στυλ για δοκιμή */
     body {
       font-family: Arial, sans-serif;
       background: #f7f7f7;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
+    #title {
+      text-align: center;
+      margin: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    /* Dummy divs για καμβάδες */
+    .canvas {
+      position: absolute;
+      border: 1px solid #ccc;
+    }
+    #canvasTableBackground {
+      position: absolute;
+      background: white;
+      border: 1px solid #999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: -10;
+    }
+    /* Buttons */
+    #buttonPanel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 200;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    /* Κουμπί εξαγωγής */
     #exportPositions {
       position: fixed;
       bottom: 20px;
@@ -22,26 +58,10 @@
       padding: 10px 15px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 1em;
-      z-index: 10;
+      font-size: 16px;
+      z-index: 300;
     }
-    #buttonPanel {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 5px;
-    }
-    button {
-      background-color: #008CBA;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    button:hover { background-color: #005f75; }
+    /* Debug Panel */
     #debugPanel {
       position: fixed;
       top: 10px;
@@ -51,57 +71,111 @@
       padding: 5px 10px;
       border-radius: 4px;
       font-family: monospace;
-      z-index: 300;
+      z-index: 350;
     }
   </style>
 </head>
 <body class="full">
+  <div id="title">Περιοδικός Πίνακας - Export Positions Test</div>
   
-  <h1>Περιοδικός Πίνακας - Εξαγωγή Θέσεων</h1>
+  <!-- Dummy divs που προσομοιώνουν τους καμβάδες της εφαρμογής -->
+  <div id="canvasTableBackground"></div>
+  <div id="canvasPeriods" class="canvas"></div>
+  <div id="canvasS" class="canvas"></div>
+  <div id="canvasF" class="canvas"></div>
+  <div id="canvasD" class="canvas"></div>
+  <div id="canvasP" class="canvas"></div>
   
+  <!-- Dummy ομαδικοί καμβάδες -->
+  <div id="canvasS_groups" class="canvas"></div>
+  <div id="canvasD_groups" class="canvas"></div>
+  <div id="canvasP_groups" class="canvas"></div>
+  
+  <!-- Panels (δείκτης, δεν χρησιμοποιούνται για το export εδώ) -->
+  <div id="infoPanelFull"></div>
+  <div id="infoPanelCollapsed"></div>
+  <div id="canvasSubshells" class="canvas"></div>
+  
+  <!-- Κουμπιά -->
   <div id="buttonPanel">
-    <button id="nextElement">Επόμενο</button>
-    <button id="fillAll">Συμπλήρωσε</button>
-    <button id="toggleFBlock">Σύμπτυξη</button>
+    <button id="nextElement">Next</button>
+    <button id="fillAll">Fill All</button>
+    <button id="toggleFBlock">Toggle</button>
     <button id="reset">Reset</button>
   </div>
-
+  
+  <!-- Κουμπί Εξαγωγής Θέσεων -->
   <button id="exportPositions">Export Positions</button>
-
+  
   <div id="debugPanel">currentZ: 0</div>
-
+  
   <script>
+    // Περιμένουμε το DOMContentLoaded για να είναι όλα έτοιμα
     document.addEventListener("DOMContentLoaded", function() {
-      
+
+      // Δημιουργούμε dummy δεδομένα για 118 στοιχεία.
+      // Κάθε στοιχείο έχει: number, row, col, block.
+      // row = ((number-1) mod 7) + 1, col = floor((number-1)/7)+1, block = "s"
       let elements = [];
-      let currentZ = 0;
-
-      function calculatePosition(e) {
-        return { x: (e.col - 1) * 42, y: (e.row - 1) * 42 };
+      for (let n = 1; n <= 118; n++) {
+        elements.push({
+          number: n,
+          row: ((n - 1) % 7) + 1,
+          col: Math.floor((n - 1) / 7) + 1,
+          block: "s"
+        });
       }
-
+      
+      let currentZ = 0;
+      
+      // Η συνάρτηση calculatePosition για block "s": x = (col-1)*42, y = (row-1)*42
+      function calculatePosition(e, block) {
+        if(block === "s") {
+          return { x: (e.col - 1) * 42, y: (e.row - 1) * 42 };
+        }
+        return { x: 0, y: 0 };
+      }
+      
+      // Συνάρτηση παραγωγής θέσεων για την τρέχουσα κατάσταση (full ή collapsed)
+      // Οι θέσεις βασίζονται στο dummy div "canvasS". Για δοκιμή, τοποθετούμε το "canvasS" στην θέση (100, 100).
       function producePositionsForState(state) {
         let posData = {};
+        let canvasEl = document.getElementById("canvasS");
+        if (!canvasEl) return posData;
+        // Ανάθεση dummy getBoundingClientRect για το canvasS
+        canvasEl.getBoundingClientRect = function() {
+          return { left: 100, top: 100, right: 100 + 42*32, bottom: 100 + 42*7 };
+        };
         elements.forEach(e => {
-          let pos = calculatePosition(e);
-          let adjustment = (state === "collapsed") ? -7 : 0;
-          posData[e.number] = {
-            x: pos.x + adjustment,
-            y: pos.y + adjustment,
-            width: 40,
-            height: 40
-          };
+          let pos = calculatePosition(e, e.block);
+          if(state === "collapsed") {
+            posData[e.number] = {
+              x: 100 + pos.x - 7,
+              y: 100 + pos.y - 7,
+              width: 40,
+              height: 40
+            };
+          } else {
+            posData[e.number] = {
+              x: 100 + pos.x,
+              y: 100 + pos.y,
+              width: 40,
+              height: 40
+            };
+          }
         });
         return posData;
       }
-
+      
+      // Συνάρτηση εξαγωγής θέσεων για το τρέχον state (full ή collapsed)
       function exportPositionsForCurrentState() {
         let state = document.body.classList.contains("collapsed") ? "collapsed" : "full";
         let positions = {};
         positions[state] = producePositionsForState(state);
-        downloadJSON(positions, `positions_${state}.json`);
+        downloadJSON(positions, "positions_" + state + ".json");
       }
-
+      
+      // Συνάρτηση που κατεβάζει το JSON ως αρχείο
       function downloadJSON(data, filename) {
         let jsonString = JSON.stringify(data, null, 2);
         let blob = new Blob([jsonString], { type: "application/json" });
@@ -112,33 +186,33 @@
         a.click();
         URL.revokeObjectURL(url);
       }
-
+      
+      // Δέσιμο του event listener για το κουμπί εξαγωγής
       document.getElementById("exportPositions").addEventListener("click", exportPositionsForCurrentState);
-      document.getElementById("toggleFBlock").addEventListener("click", function() {
-        document.body.classList.toggle("collapsed");
-      });
-
+      
+      // Παράδειγμα χειριστών για τα υπόλοιπα κουμπιά (Next, Toggle, Fill All, Reset)
       document.getElementById("nextElement").addEventListener("click", function() {
         if (currentZ < 118) currentZ++;
         document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
       });
-
-      document.getElementById("fillAll").addEventListener("click", function() {
-        console.log("Fill All Clicked");
+      
+      document.getElementById("toggleFBlock").addEventListener("click", function() {
+        document.body.classList.toggle("collapsed");
       });
-
+      
+      document.getElementById("fillAll").addEventListener("click", function() {
+        console.log("Fill All clicked");
+      });
+      
       document.getElementById("reset").addEventListener("click", function() {
         currentZ = 0;
         document.getElementById("debugPanel").textContent = "currentZ: " + currentZ;
       });
-
-      fetch('elements.json')
-        .then(response => response.json())
-        .then(data => { elements = data; })
-        .catch(err => console.error('Error loading elements:', err));
-
+      
+      // Εμφάνιση στο console για έλεγχο
+      console.log("Dummy elements loaded: " + elements.length);
+      
     });
   </script>
-
 </body>
 </html>
