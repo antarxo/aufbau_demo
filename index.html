@@ -1,90 +1,51 @@
 <!DOCTYPE html>
 <html lang="el">
-<head>
-  <meta charset="UTF-8">
-  <title>Εμφάνιση Τοποθετήσεων Περιοδικού Πίνακα</title>
-  <style>
-    /* Ο κύριος container έχει σχετική θέση και όριο (προσαρμόστε ανάλογα με τις ανάγκες) */
-    .table {
-      position: relative;
-      width: 1400px; /* Πλάτος ανάλογο με το grid (32 στήλες x 42 px) */
-      height: 350px; /* 7 γραμμές x 42 px */
-      border: 1px solid #000;
-      margin-top: 20px;
-    }
-    .cell {
-      position: absolute;
-      border: 1px solid #ccc;
-      background: rgba(0,150,255,0.2);
-      box-sizing: border-box;
-      text-align: center;
-      line-height: 40px;
-      font-size: 12px;
-    }
-  </style>
-</head>
-<body>
-  <button id="toggleButton">Εναλλαγή Mode</button>
-  <div id="tableContainer"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Απεικόνιση positions.json με p5.js</title>
+    <!-- Φόρτωση της βιβλιοθήκης p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  </head>
+  <body>
+    <script>
+      let positions;
 
-  <script>
-    let positionsData = null;
-    let currentMode = "expanded"; // Ξεκινάμε με το expanded mode
+      // Προφόρτωση του αρχείου JSON πριν το setup()
+      function preload() {
+        positions = loadJSON('positions.json');
+      }
 
-    // Συνάρτηση φόρτωσης του αρχείου JSON
-    function loadPositions() {
-      fetch('positions.json')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("Αποτυχία φόρτωσης του αρχείου positions.json");
-          }
-          return response.json();
-        })
-        .then(data => {
-          positionsData = data;
-          displayTable(currentMode);
-        })
-        .catch(error => {
-          console.error("Σφάλμα:", error);
-        });
-    }
+      function setup() {
+        // Υπολογισμός των ορίων για το καμβά
+        let maxX = 0,
+          maxY = 0;
+        for (let key in positions.collapsed) {
+          let rectData = positions.collapsed[key];
+          if (rectData.x + rectData.width > maxX) maxX = rectData.x + rectData.width;
+          if (rectData.y + rectData.height > maxY) maxY = rectData.y + rectData.height;
+        }
+        // Δημιουργία καμβά με λίγο περιθώριο
+        createCanvas(maxX + 20, maxY + 20);
+        textAlign(CENTER, CENTER);
+        textSize(10);
+      }
 
-    // Δημιουργεί το grid χρησιμοποιώντας τα δεδομένα του επιλεγμένου mode (expanded ή collapsed)
-    function createTable(mode) {
-      const container = document.createElement('div');
-      container.className = 'table';
-      const modeData = positionsData[mode];
-      for (let key in modeData) {
-        if (modeData.hasOwnProperty(key)) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          const pos = modeData[key];
-          cell.style.left = pos.x + "px";
-          cell.style.top = pos.y + "px";
-          cell.style.width = pos.width + "px";
-          cell.style.height = pos.height + "px";
-          cell.textContent = key; // Εμφάνιση του αριθμού του στοιχείου
-          container.appendChild(cell);
+      function draw() {
+        background(255);
+        noFill();
+        stroke(255, 0, 0);
+
+        // Απεικόνιση κάθε ορθογωνίου και το κείμενο του κλειδιού στο κέντρο του
+        for (let key in positions.collapsed) {
+          let rectData = positions.collapsed[key];
+          rect(rectData.x, rectData.y, rectData.width, rectData.height);
+          fill(0);
+          noStroke();
+          text(key, rectData.x + rectData.width / 2, rectData.y + rectData.height / 2);
+          noFill();
+          stroke(255, 0, 0);
         }
       }
-      return container;
-    }
-
-    // Εμφάνιση του grid στον DOM
-    function displayTable(mode) {
-      const tableContainer = document.getElementById("tableContainer");
-      tableContainer.innerHTML = ""; // Καθαρισμός προηγούμενου περιεχομένου
-      tableContainer.appendChild(createTable(mode));
-    }
-
-    // Εναλλαγή mode με το πάτημα του κουμπιού
-    document.getElementById("toggleButton").addEventListener("click", function() {
-      currentMode = (currentMode === "expanded") ? "collapsed" : "expanded";
-      displayTable(currentMode);
-    });
-
-    // Φόρτωση του αρχείου positions.json κατά το φόρτωμα της σελίδας
-    loadPositions();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
