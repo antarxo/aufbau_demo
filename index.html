@@ -1,75 +1,90 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <title>Έλεγχος Θέσεων Περιοδικού Πίνακα</title>
-    <script>
-        let positions = { full: {}, collapsed: {} };
-        let currentState = "full";
-
-        async function loadPositions() {
-            let fullResponse = await fetch("positions_full.json");
-            let collapsedResponse = await fetch("positions_collapsed.json");
-            positions.full = await fullResponse.json();
-            positions.collapsed = await collapsedResponse.json();
-            drawElements();
-        }
-
-        function drawElements() {
-            let container = document.getElementById("ptable");
-            container.innerHTML = "";
-            let data = positions[currentState][currentState];
-            for (let key in data) {
-                let el = document.createElement("div");
-                el.className = "element";
-                el.textContent = key;
-                el.style.left = data[key].x + "px";
-                el.style.top = data[key].y + "px";
-                el.style.width = data[key].width + "px";
-                el.style.height = data[key].height + "px";
-                container.appendChild(el);
-            }
-        }
-
-        function toggleState() {
-            currentState = currentState === "full" ? "collapsed" : "full";
-            drawElements();
-        }
-
-        window.onload = loadPositions;
-    </script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        #ptable {
-            position: relative;
-            width: 1000px;
-            height: 600px;
-            border: 1px solid black;
-            margin: 20px auto;
-        }
-        .element {
-            position: absolute;
-            background-color: lightblue;
-            border: 1px solid black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Εμφάνιση Τοποθετήσεων Περιοδικού Πίνακα</title>
+  <style>
+    /* Ο κύριος container έχει σχετική θέση και όριο (προσαρμόστε ανάλογα με τις ανάγκες) */
+    .table {
+      position: relative;
+      width: 1400px; /* Πλάτος ανάλογο με το grid (32 στήλες x 42 px) */
+      height: 350px; /* 7 γραμμές x 42 px */
+      border: 1px solid #000;
+      margin-top: 20px;
+    }
+    .cell {
+      position: absolute;
+      border: 1px solid #ccc;
+      background: rgba(0,150,255,0.2);
+      box-sizing: border-box;
+      text-align: center;
+      line-height: 40px;
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Έλεγχος Θέσεων Περιοδικού Πίνακα</h1>
-    <button onclick="toggleState()">Εναλλαγή Full/Collapsed</button>
-    <div id="ptable"></div>
+  <button id="toggleButton">Εναλλαγή Mode</button>
+  <div id="tableContainer"></div>
+
+  <script>
+    let positionsData = null;
+    let currentMode = "expanded"; // Ξεκινάμε με το expanded mode
+
+    // Συνάρτηση φόρτωσης του αρχείου JSON
+    function loadPositions() {
+      fetch('positions.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Αποτυχία φόρτωσης του αρχείου positions.json");
+          }
+          return response.json();
+        })
+        .then(data => {
+          positionsData = data;
+          displayTable(currentMode);
+        })
+        .catch(error => {
+          console.error("Σφάλμα:", error);
+        });
+    }
+
+    // Δημιουργεί το grid χρησιμοποιώντας τα δεδομένα του επιλεγμένου mode (expanded ή collapsed)
+    function createTable(mode) {
+      const container = document.createElement('div');
+      container.className = 'table';
+      const modeData = positionsData[mode];
+      for (let key in modeData) {
+        if (modeData.hasOwnProperty(key)) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          const pos = modeData[key];
+          cell.style.left = pos.x + "px";
+          cell.style.top = pos.y + "px";
+          cell.style.width = pos.width + "px";
+          cell.style.height = pos.height + "px";
+          cell.textContent = key; // Εμφάνιση του αριθμού του στοιχείου
+          container.appendChild(cell);
+        }
+      }
+      return container;
+    }
+
+    // Εμφάνιση του grid στον DOM
+    function displayTable(mode) {
+      const tableContainer = document.getElementById("tableContainer");
+      tableContainer.innerHTML = ""; // Καθαρισμός προηγούμενου περιεχομένου
+      tableContainer.appendChild(createTable(mode));
+    }
+
+    // Εναλλαγή mode με το πάτημα του κουμπιού
+    document.getElementById("toggleButton").addEventListener("click", function() {
+      currentMode = (currentMode === "expanded") ? "collapsed" : "expanded";
+      displayTable(currentMode);
+    });
+
+    // Φόρτωση του αρχείου positions.json κατά το φόρτωμα της σελίδας
+    loadPositions();
+  </script>
 </body>
 </html>
