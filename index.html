@@ -1,51 +1,77 @@
 <!DOCTYPE html>
 <html lang="el">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Απεικόνιση positions.json με p5.js</title>
-    <!-- Φόρτωση της βιβλιοθήκης p5.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
-  </head>
-  <body>
-    <script>
-      let positions;
+<head>
+  <meta charset="UTF-8">
+  <title>Εναλλαγή Καταστάσεων με p5.js</title>
+  <!-- Φόρτωση της βιβλιοθήκης p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+</head>
+<body>
+  <script>
+    let positions;
+    let currentMode = "collapsed"; // αρχική κατάσταση
+    let toggleButton;
+    let canvasWidth, canvasHeight;
 
-      // Προφόρτωση του αρχείου JSON πριν το setup()
-      function preload() {
-        positions = loadJSON('positions.json');
-      }
+    // Προφόρτωση του αρχείου JSON
+    function preload() {
+      positions = loadJSON('positions.json');
+    }
 
-      function setup() {
-        // Υπολογισμός των ορίων για το καμβά
-        let maxX = 0,
-          maxY = 0;
-        for (let key in positions.collapsed) {
-          let rectData = positions.collapsed[key];
-          if (rectData.x + rectData.width > maxX) maxX = rectData.x + rectData.width;
-          if (rectData.y + rectData.height > maxY) maxY = rectData.y + rectData.height;
+    function setup() {
+      // Υπολογισμός των μέγιστων διαστάσεων για να καλύψουμε και τις δύο καταστάσεις
+      let maxX = 0, maxY = 0;
+      for (let mode in positions) {
+        for (let key in positions[mode]) {
+          let rectData = positions[mode][key];
+          if (rectData.x + rectData.width > maxX) {
+            maxX = rectData.x + rectData.width;
+          }
+          if (rectData.y + rectData.height > maxY) {
+            maxY = rectData.y + rectData.height;
+          }
         }
-        // Δημιουργία καμβά με λίγο περιθώριο
-        createCanvas(maxX + 20, maxY + 20);
-        textAlign(CENTER, CENTER);
-        textSize(10);
       }
+      canvasWidth = maxX + 20;
+      canvasHeight = maxY + 20;
+      createCanvas(canvasWidth, canvasHeight);
+      textAlign(CENTER, CENTER);
+      textSize(10);
 
-      function draw() {
-        background(255);
+      // Δημιουργία κουμπιού για εναλλαγή κατάστασης
+      toggleButton = createButton("Εναλλαγή Κατάστασης");
+      toggleButton.position(10, canvasHeight + 20);
+      toggleButton.mousePressed(toggleState);
+    }
+
+    // Συνάρτηση εναλλαγής μεταξύ "collapsed" και "expanded"
+    function toggleState() {
+      currentMode = (currentMode === "collapsed") ? "expanded" : "collapsed";
+    }
+
+    function draw() {
+      background(255);
+      noFill();
+      stroke(255, 0, 0);
+
+      // Εμφάνιση των ορθογωνίων βάσει της τρέχουσας κατάστασης
+      let modeData = positions[currentMode];
+      for (let key in modeData) {
+        let rectData = modeData[key];
+        rect(rectData.x, rectData.y, rectData.width, rectData.height);
+        fill(0);
+        noStroke();
+        text(key, rectData.x + rectData.width / 2, rectData.y + rectData.height / 2);
         noFill();
         stroke(255, 0, 0);
-
-        // Απεικόνιση κάθε ορθογωνίου και το κείμενο του κλειδιού στο κέντρο του
-        for (let key in positions.collapsed) {
-          let rectData = positions.collapsed[key];
-          rect(rectData.x, rectData.y, rectData.width, rectData.height);
-          fill(0);
-          noStroke();
-          text(key, rectData.x + rectData.width / 2, rectData.y + rectData.height / 2);
-          noFill();
-          stroke(255, 0, 0);
-        }
       }
-    </script>
-  </body>
+
+      // Εμφάνιση της τρέχουσας κατάστασης στην κορυφή
+      noStroke();
+      fill(0);
+      textSize(16);
+      text("Τρέχουσα κατάσταση: " + currentMode, width / 2, 20);
+    }
+  </script>
+</body>
 </html>
