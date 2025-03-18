@@ -9,21 +9,14 @@
             margin: 20px auto;
             overflow: hidden;
             border: 2px solid #333;
+            background: #f0f0f0;
         }
 
-        .puzzle-piece {
-            width: 50px;
-            height: 50.6px;
+        .tetris-piece {
             position: absolute;
             background-image: url('PP.jpg');
             background-size: 900px 506px;
             transition: all 1s ease-in-out;
-            clip-path: url(#tShapedTabs);
-        }
-
-        .puzzle-piece.solved {
-            clip-path: none !important;
-            z-index: 1;
         }
 
         button {
@@ -38,63 +31,96 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
-    <!-- SVG με γλωσσίδες τύπου Τ -->
+    <!-- Tetris clip-paths -->
     <svg width="0" height="0">
-        <clipPath id="tShapedTabs">
-            <!-- Τριγωνικές γλωσσίδες με μορφή "Τ" -->
-            <path d="M0,20 L15,20 L15,0 L35,0 L35,20 L50,20 
-                     L50,35 L35,35 L35,55 L15,55 L15,35 L0,35 Z
-                     
-                     M50,0 L65,0 L65,20 L85,20 L85,0 L100,0 
-                     L100,35 L85,35 L85,55 L65,55 L65,35 L50,35 Z
-                     
-                     M0,65 L15,65 L15,85 L35,85 L35,65 L50,65 
-                     L50,100 L35,100 L35,80 L15,80 L15,100 L0,100 Z
-                     
-                     M50,65 L65,65 L65,85 L85,85 L85,65 L100,65 
-                     L100,100 L85,100 L85,80 L65,80 L65,100 L50,100 Z"/>
+        <!-- I-shape (4x1) -->
+        <clipPath id="I-shape">
+            <rect width="200" height="50" />
+        </clipPath>
+
+        <!-- T-shape -->
+        <clipPath id="T-shape">
+            <path d="M0,0 L200,0 L200,50 L125,50 L125,100 L75,100 L75,50 L0,50 Z"/>
+        </clipPath>
+
+        <!-- L-shape -->
+        <clipPath id="L-shape">
+            <path d="M0,0 L100,0 L100,150 L50,150 L50,100 L0,100 Z"/>
+        </clipPath>
+
+        <!-- O-shape (2x2) -->
+        <clipPath id="O-shape">
+            <rect width="100" height="100"/>
         </clipPath>
     </svg>
 
     <script>
-        const COLS = 18;
-        const ROWS = 10;
+        const TETRIS_LAYOUT = [
+            { type: 'I', cols: 4, rows: 1, clip: 'I-shape' },
+            { type: 'T', cols: 3, rows: 2, clip: 'T-shape' },
+            { type: 'L', cols: 2, rows: 3, clip: 'L-shape' },
+            { type: 'O', cols: 2, rows: 2, clip: 'O-shape' }
+        ];
+
+        const PIECES = [];
         let animationActive = true;
         let timeoutId;
 
         function createPuzzle() {
             const container = document.getElementById('puzzleContainer');
-            container.innerHTML = '';
+            let x = 0, y = 0;
 
-            for(let row = 0; row < ROWS; row++) {
-                for(let col = 0; col < COLS; col++) {
-                    const piece = document.createElement('div');
-                    piece.className = 'puzzle-piece';
-                    piece.style.backgroundPosition = `-${col * 50}px -${row * 50.6}px`;
-                    piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
-                    container.appendChild(piece);
+            TETRIS_LAYOUT.forEach((piece, index) => {
+                const div = document.createElement('div');
+                div.className = 'tetris-piece';
+                
+                // Set dimensions and clip-path
+                div.style.width = `${piece.cols * 50}px`;
+                div.style.height = `${piece.rows * 50.6}px`;
+                div.style.clipPath = `url(#${piece.clip})`;
+                
+                // Set background position
+                div.style.backgroundPosition = `-${x}px -${y}px`;
+                
+                // Store original position
+                PIECES.push({
+                    element: div,
+                    origX: x,
+                    origY: y,
+                    type: piece.type
+                });
+
+                // Update grid position
+                x += piece.cols * 50;
+                if(x >= 900) {
+                    x = 0;
+                    y += piece.rows * 50.6;
                 }
-            }
-        }
 
-        function solvePuzzle() {
-            document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
-                const col = index % COLS;
-                const row = Math.floor(index / COLS);
-                piece.style.transform = `translate(${col * 50}px, ${row * 50.6}px)`;
-                piece.classList.add('solved');
+                container.appendChild(div);
             });
+
+            scramblePuzzle();
         }
 
         function scramblePuzzle() {
-            document.querySelectorAll('.puzzle-piece').forEach(piece => {
-                piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
-                piece.classList.remove('solved');
+            PIECES.forEach(piece => {
+                piece.element.style.transform = `
+                    translate(${Math.random()*700}px, ${Math.random()*400}px)
+                    rotate(${Math.random()*360}deg)
+                `;
+            });
+        }
+
+        function solvePuzzle() {
+            PIECES.forEach(piece => {
+                piece.element.style.transform = `translate(${piece.origX}px, ${piece.origY}px) rotate(0deg)`;
             });
         }
 
         function animatePuzzle() {
-            if (!animationActive) return;
+            if(!animationActive) return;
+            
             solvePuzzle();
             timeoutId = setTimeout(() => {
                 scramblePuzzle();
