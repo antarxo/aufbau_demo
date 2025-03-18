@@ -4,19 +4,26 @@
     <style>
         .container {
             width: 900px;
-            height: 504px; /* Προσαρμογή για ακέραιο πολλαπλάσιο */
+            height: 506px;
             position: relative;
             margin: 20px auto;
             overflow: hidden;
             border: 2px solid #333;
-            background: #f0f0f0;
         }
 
-        .tetris-piece {
+        .puzzle-piece {
             position: absolute;
             background-image: url('PP.jpg');
-            background-size: 900px 504px;
-            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background-size: 900px 506px;
+            transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            clip-path: url(#tetrisClip);
+        }
+
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -25,97 +32,82 @@
     <button id="stopBtn">STOP</button>
 
     <svg width="0" height="0">
-        <!-- Tetris Blocks -->
-        <clipPath id="I-shape">
-            <rect width="100" height="25"/>
-        </clipPath>
-        <clipPath id="T-shape">
-            <path d="M0,0 L100,0 L100,25 L70,25 L70,50 L30,50 L30,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="L-shape">
-            <path d="M0,0 L75,0 L75,50 L25,50 L25,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="O-shape">
-            <rect width="50" height="50"/>
+        <!-- Tetris-style clip-path -->
+        <clipPath id="tetrisClip">
+            <path d="M0,20 Q0,0 20,0 L30,0 Q50,10 70,0 L80,0 Q100,0 100,20 
+                     L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 
+                     L70,100 Q50,90 30,100 L20,100 Q0,100 0,80 
+                     L0,70 Q10,50 0,30 Z"/>
         </clipPath>
     </svg>
 
     <script>
-        const BLOCK_SIZE = 50;
-        const COLS = 18;  // 900 / 50
-        const ROWS = 10;  // 500 / 50
-        const TETROMINOES = {
-            'I': [[1,1,1,1]],
-            'O': [[1,1],[1,1]],
-            'T': [[0,1,0],[1,1,1]],
-            'L': [[1,0],[1,0],[1,1]]
-        };
+        const COLS = 18;
+        const ROWS = 10;
+        const PIECE_WIDTH = 50;
+        const PIECE_HEIGHT = 50.6;
+        let animationActive = true;
+        let isSolved = false;
+        let animationTimeout;
 
-        class PuzzleTiler {
-            constructor() {
-                this.grid = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-                this.pieces = [];
-            }
+        function createPuzzle() {
+            const container = document.getElementById('puzzleContainer');
+            container.innerHTML = '';
 
-            generatePieces() {
-                for(let shape in TETROMINOES) {
-                    while(this.placeShape(TETROMINOES[shape])) {}
+            for(let row = 0; row < ROWS; row++) {
+                for(let col = 0; col < COLS; col++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'puzzle-piece';
+                    piece.style.width = PIECE_WIDTH + 'px';
+                    piece.style.height = PIECE_HEIGHT + 'px';
+                    piece.style.backgroundPosition = `-${col * PIECE_WIDTH}px -${row * PIECE_HEIGHT}px`;
+                    piece.dataset.origX = col * PIECE_WIDTH;
+                    piece.dataset.origY = row * PIECE_HEIGHT;
+                    container.appendChild(piece);
                 }
             }
+            startAnimationCycle();
+        }
 
-            placeShape(shape) {
-                // Πιθανές θέσεις και περιστροφές
-                for(let rotation = 0; rotation < 4; rotation++) {
-                    const rotated = this.rotate(shape, rotation);
-                    for(let y = 0; y < ROWS - rotated.length + 1; y++) {
-                        for(let x = 0; x < COLS - rotated[0].length + 1; x++) {
-                            if(this.canPlace(rotated, x, y)) {
-                                this.markGrid(rotated, x, y);
-                                this.pieces.push({ shape: rotated, x, y });
-                                return true;
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
+        function animateSolve() {
+            document.querySelectorAll('.puzzle-piece').forEach(piece => {
+                const targetX = parseFloat(piece.dataset.origX);
+                const targetY = parseFloat(piece.dataset.origY);
+                piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
+            });
+            isSolved = true;
+        }
 
-            rotate(matrix, times) {
-                // Περιστροφή πίνακα
-                let result = matrix;
-                for(let i = 0; i < times; i++) {
-                    result = result[0].map((_, i) => 
-                        result.map(row => row[row.length-1-i])
-                    );
-                }
-                return result;
-            }
+        function animateScramble() {
+            document.querySelectorAll('.puzzle-piece').forEach(piece => {
+                const randomX = Math.random() * (900 - PIECE_WIDTH);
+                const randomY = Math.random() * (506 - PIECE_HEIGHT);
+                piece.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            });
+            isSolved = false;
+        }
 
-            canPlace(shape, x, y) {
-                // Έλεγχος εάν χωράει το σχήμα
-                for(let dy = 0; dy < shape.length; dy++) {
-                    for(let dx = 0; dx < shape[dy].length; dx++) {
-                        if(shape[dy][dx] && this.grid[y+dy][x+dx]) return false;
-                    }
-                }
-                return true;
-            }
+        function startAnimationCycle() {
+            if(!animationActive) return;
 
-            markGrid(shape, x, y) {
-                for(let dy = 0; dy < shape.length; dy++) {
-                    for(let dx = 0; dx < shape[dy].length; dx++) {
-                        if(shape[dy][dx]) this.grid[y+dy][x+dx] = 1;
-                    }
-                }
+            if(isSolved) {
+                animateScramble();
+                animationTimeout = setTimeout(startAnimationCycle, 2000);
+            } else {
+                animateSolve();
+                animationTimeout = setTimeout(startAnimationCycle, 2000);
             }
         }
 
-        // Αρχικοποίηση και δημιουργία κομματιών
-        const tiler = new PuzzleTiler();
-        tiler.generatePieces();
-        console.log(tiler.pieces); // Debug: Προβολή δημιουργημένων κομματιών
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            animationActive = false;
+            clearTimeout(animationTimeout);
+            document.querySelectorAll('.puzzle-piece').forEach(piece => {
+                piece.style.transition = 'none';
+            });
+        });
 
-        // ... (Υπόλοιπος κώδικας για animation και διαχείριση)
+        window.onload = createPuzzle;
     </script>
 </body>
 </html>
