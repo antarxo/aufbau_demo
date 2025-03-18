@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Tetris Puzzle - Περιστροφές</title>
+  <title>Tetris Puzzle - Περιστροφή Κατά το Κόψιμο</title>
   <style>
     .container {
       width: 900px;
@@ -46,7 +46,7 @@
     <clipPath id="I1-shape">
       <rect width="100" height="300"/>
     </clipPath>
-    <!-- Ορθογώνια σχήματα -->
+    <!-- Ορθογώνια σχήματα για διάφορες διαστάσεις -->
     <clipPath id="I-shape-4x2">
       <rect width="400" height="200"/>
     </clipPath>
@@ -63,52 +63,41 @@
 
   <script>
     /* 
-      Layout που καλύπτει το container 900×600 με Tetris σχήματα.
-      Διαστάσεις είναι πολλαπλάσια του 50.
+      Στατικό layout που καλύπτει το container 900×600 με Tetris σχήματα.
+      Κάθε αντικείμενο έχει μία επιπλέον ιδιότητα 'rotation' που ορίζει την
+      γωνία (σε μοίρες) με την οποία "κόβεται" το κομμάτι από την εικόνα.
       
       Διάταξη:
       - Πάνω σειρά (y: 0 έως 300): 
-          • Piece A: T-shape 400×300 στο αριστερό μέρος.
-          • Piece B: L-shape 400×300 στο κέντρο.
-          • Piece C: I-σχήμα 1×3 (100×300) στα δεξιά.
+          • Piece A: T-shape 400×300 στο αριστερό μέρος, rotation: 90°
+          • Piece B: L-shape 400×300 στο κέντρο, rotation: 180°
+          • Piece C: I-σχήμα 1×3 (100×300) στα δεξιά, rotation: 270°
       - Κάτω πάνω (y: 300 έως 500):
-          • Piece D: I-shape-4x2 400×200.
-          • Piece E: I-shape-3x2 300×200.
-          • Piece F: I-shape-2x2 200×200.
+          • Piece D: I-shape-4x2 400×200, rotation: 0°
+          • Piece E: I-shape-3x2 300×200, rotation: 90°
+          • Piece F: I-shape-2x2 200×200, rotation: 180°
       - Κάτω κάτω (y: 500 έως 600):
-          • Piece G: I-shape-9x1 900×100.
+          • Piece G: I-shape-9x1 900×100, rotation: 270°
     */
     const STATIC_LAYOUT = [
-      { type: 'T-shape',    x: 0,   y: 0,   width: 400, height: 300 },
-      { type: 'L-shape',    x: 400, y: 0,   width: 400, height: 300 },
-      { type: 'I1-shape',   x: 800, y: 0,   width: 100, height: 300 },
-      { type: 'I-shape-4x2', x: 0,   y: 300, width: 400, height: 200 },
-      { type: 'I-shape-3x2', x: 400, y: 300, width: 300, height: 200 },
-      { type: 'I-shape-2x2', x: 700, y: 300, width: 200, height: 200 },
-      { type: 'I-shape-9x1', x: 0,   y: 500, width: 900, height: 100 }
+      { type: 'T-shape',    x: 0,   y: 0,   width: 400, height: 300, rotation: 90 },
+      { type: 'L-shape',    x: 400, y: 0,   width: 400, height: 300, rotation: 180 },
+      { type: 'I1-shape',   x: 800, y: 0,   width: 100, height: 300, rotation: 270 },
+      { type: 'I-shape-4x2', x: 0,   y: 300, width: 400, height: 200, rotation: 0 },
+      { type: 'I-shape-3x2', x: 400, y: 300, width: 300, height: 200, rotation: 90 },
+      { type: 'I-shape-2x2', x: 700, y: 300, width: 200, height: 200, rotation: 180 },
+      { type: 'I-shape-9x1', x: 0,   y: 500, width: 900, height: 100, rotation: 270 }
     ];
 
     let animationActive = true;
     let pieces = [];
 
-    // Λειτουργία που επιστρέφει τυχαία γωνία (0, 90, 180 ή 270)
-    function getRandomRotation() {
-      const angles = [0, 90, 180, 270];
-      return angles[Math.floor(Math.random() * angles.length)];
-    }
-
-    // Δημιουργεί τα κομμάτια σύμφωνα με το layout και ορίζει αρχική περιστροφή
+    // Δημιουργεί τα κομμάτια και ορίζει την αρχική τους περιστροφή κατά το "κόψιμο"
     function initializePuzzle() {
       const container = document.getElementById('puzzleContainer');
       STATIC_LAYOUT.forEach(config => {
         const piece = document.createElement('div');
         piece.className = 'tetris-piece';
-        
-        // Επιλέγουμε τυχαία αρχική περιστροφή για το κομμάτι
-        const initialRotation = getRandomRotation();
-        // Αποθηκεύουμε την αρχική περιστροφή στο στοιχείο για αναφορά (προαιρετικά)
-        piece.dataset.initialRotation = initialRotation;
-        
         Object.assign(piece.style, {
           width: config.width + 'px',
           height: config.height + 'px',
@@ -117,28 +106,27 @@
           clipPath: `url(#${config.type})`,
           backgroundPosition: `-${config.x}px -${config.y}px`
         });
-        
-        // Αρχικός state: τοποθετούμε το κομμάτι πολύ ψηλά (off-screen) με την αρχική περιστροφή
-        piece.style.transform = `translateY(-600px) rotate(${initialRotation}deg)`;
-        
+        // Αρχική κατάσταση: τοποθετούμε το κομμάτι πάνω από το container (translateY(-600px))
+        // και το περιστρέφουμε σύμφωνα με την ιδιότητα rotation
+        piece.style.transform = `translateY(-600px) rotate(${config.rotation}deg)`;
         container.appendChild(piece);
         pieces.push(piece);
       });
     }
 
-    // Κάθε κομμάτι πέφτει από πάνω προς τα κάτω και ταυτόχρονα περιστρέφεται στην τελική σωστή θέση (rotate 0)
+    // Κατά το animation, κάθε κομμάτι πέφτει από πάνω προς τα κάτω και περιστρέφεται στην τελική σωστή θέση (rotate(0deg))
     function dropPieces() {
       requestAnimationFrame(() => {
-        // Ταξινομούμε τα κομμάτια με βάση το y (τα πιο χαμηλά πέφτουν πρώτα)
+        // Ταξινομούμε τα κομμάτια κατά τη τιμή του y (τα πιο χαμηλά πέφτουν πρώτα)
         const sortedPieces = pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top));
         sortedPieces.forEach((piece, index) => {
-          const delay = index * 300;  // 300ms delay ανά κομμάτι
-          const duration = 2 + index * 0.3; // μεγαλύτερος χρόνος πτώσης για τα πιο χαμηλά
+          const delay = index * 300;  // καθυστέρηση 300ms ανά κομμάτι
+          const duration = 2 + index * 0.3; // τα πιο χαμηλά πέφτουν με μεγαλύτερη διάρκεια
           setTimeout(() => {
             if (!animationActive) return;
             piece.style.transition = `transform ${duration}s ease, opacity ${duration}s ease`;
             piece.style.opacity = '1';
-            // Κατά τη διάρκεια του animation, το κομμάτι μετακινείται στη σωστή του θέση (translateY(0)) και περιστρέφεται στο 0°
+            // Το κομμάτι πέφτει στη σωστή του θέση και περιστρέφεται στο 0° για να συναρμολογηθεί η εικόνα
             piece.style.transform = `translateY(0) rotate(0deg)`;
           }, delay);
         });
