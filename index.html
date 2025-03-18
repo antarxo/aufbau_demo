@@ -11,13 +11,12 @@
             border: 2px solid #333;
         }
 
-        .puzzle-piece {
-            width: 50px;
-            height: 50.6px;
+        .tetris-piece {
             position: absolute;
             background-image: url('PP.jpg');
             background-size: 900px 506px;
-            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
         }
 
         button {
@@ -32,88 +31,137 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
+    <svg width="0" height="0">
+        <!-- Tetris Clip-Paths -->
+        <clipPath id="I-shape">
+            <rect width="100" height="25"/>
+        </clipPath>
+        <clipPath id="T-shape">
+            <path d="M0,0 L100,0 L100,25 L70,25 L70,50 L30,50 L30,25 L0,25 Z"/>
+        </clipPath>
+        <clipPath id="L-shape">
+            <path d="M0,0 L75,0 L75,50 L25,50 L25,25 L0,25 Z"/>
+        </clipPath>
+        <clipPath id="O-shape">
+            <rect width="50" height="50"/>
+        </clipPath>
+        <clipPath id="line-shape">
+            <rect width="150" height="25"/>
+        </clipPath>
+    </svg>
+
     <script>
-        const COLS = 18;
-        const ROWS = 10;
-        const PIECE_WIDTH = 50;
-        const PIECE_HEIGHT = 50.6;
+        const TETRIS_CONFIG = [
+            {type: 'I', width: 100, height: 25, rows: 1, cols: 4},
+            {type: 'T', width: 100, height: 50, rows: 2, cols: 3},
+            {type: 'L', width: 75, height: 50, rows: 2, cols: 2},
+            {type: 'O', width: 50, height: 50, rows: 1, cols: 1},
+            {type: 'line', width: 150, height: 25, rows: 1, cols: 6}
+        ];
+
+        const container = document.getElementById('puzzleContainer');
         let animationActive = true;
-        let animationQueue = [];
+        let pieces = [];
 
-        function createPuzzle() {
-            const container = document.getElementById('puzzleContainer');
-            container.innerHTML = '';
+        function initializePuzzle() {
+            // Δημιουργία τυχαίου Tetris grid
+            let occupied = Array(10).fill().map(() => Array(18).fill(false));
+            
+            TETRIS_CONFIG.forEach(config => {
+                for(let i=0; i<5; i++) { // Προσθήκη 5 κομματιών από κάθε τύπο
+                    let placed = false;
+                    while(!placed) {
+                        const row = Math.floor(Math.random() * (10 - config.rows));
+                        const col = Math.floor(Math.random() * (18 - config.cols));
+                        
+                        if(canPlace(occupied, row, col, config.rows, config.cols)) {
+                            placePiece(occupied, row, col, config);
+                            placed = true;
+                        }
+                    }
+                }
+            });
+        }
 
-            // Δημιουργία κομματιών με αρχικές θέσεις
-            for(let row = 0; row < ROWS; row++) {
-                for(let col = 0; col < COLS; col++) {
-                    const piece = document.createElement('div');
-                    piece.className = 'puzzle-piece';
-                    piece.style.backgroundPosition = `-${col*PIECE_WIDTH}px -${row*PIECE_HEIGHT}px`;
-                    piece.style.transform = `translate(${col*PIECE_WIDTH}px, ${row*PIECE_HEIGHT}px)`;
-                    piece.dataset.targetX = col*PIECE_WIDTH;
-                    piece.dataset.targetY = row*PIECE_HEIGHT;
-                    container.appendChild(piece);
+        function canPlace(grid, row, col, rows, cols) {
+            for(let r=row; r<row+rows; r++) {
+                for(let c=col; c<col+cols; c++) {
+                    if(grid[r][c]) return false;
                 }
             }
-            startAnimationCycle();
+            return true;
         }
 
-        async function startAnimationCycle() {
+        function placePiece(grid, row, col, config) {
+            const piece = document.createElement('div');
+            piece.className = 'tetris-piece';
+            piece.style.width = `${config.width}px`;
+            piece.style.height = `${config.height}px`;
+            piece.style.clipPath = `url(#${config.type}-shape)`;
+            piece.style.left = `${col * 50}px`;
+            piece.style.top = `${row * 50.6}px`;
+            piece.dataset.finalX = col * 50;
+            piece.dataset.finalY = row * 50.6;
+            
+            // Background positioning
+            piece.style.backgroundPosition = `-${col * 50}px -${row * 50.6}px`;
+            
+            container.appendChild(piece);
+            pieces.push(piece);
+
+            for(let r=row; r<row+config.rows; r++) {
+                for(let c=col; c<col+config.cols; c++) {
+                    grid[r][c] = true;
+                }
+            }
+        }
+
+        async function animationCycle() {
             while(animationActive) {
-                // Φάση 1: Όλα τα κομμάτια βγαίνουν εκτός οθόνης
-                await exitAllPieces();
-                
-                // Φάση 2: Επιστροφή με σπειροειδή κίνηση
-                await enterAllPieces();
-                
-                // Παύση 2s
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
+                // Φάση 1: Προβολή πλήρης εικόνας για 2s
+                container.style.backgroundImage = "url('PP.jpg')";
+                await new Promise(r => setTimeout(r, 2000));
+                container.style.backgroundImage = "none";
 
-        async function exitAllPieces() {
-            const pieces = Array.from(document.querySelectorAll('.puzzle-piece'));
-            const exitDuration = 1000; // 1s ανά κομμάτι
-            
-            // Ταξινόμηση ανά row (πάνω πρώτα)
-            pieces.sort((a,b) => parseFloat(a.dataset.targetY) - parseFloat(b.dataset.targetY));
-            
-            for(const [index, piece] of pieces.entries()) {
-                const delay = index * 50; // Χρονική διαφορά 50ms ανά κομμάτι
-                await new Promise(resolve => setTimeout(resolve, delay));
-                piece.style.transform = `translate(${Math.random()*window.innerWidth}px, ${-window.innerHeight}px)`;
-            }
-            await new Promise(resolve => setTimeout(resolve, exitDuration));
-        }
+                // Φάση 2: Ακαριαία εξαφάνιση κομματιών
+                pieces.forEach(piece => {
+                    piece.style.transition = 'none';
+                    piece.style.transform = `translateY(-100vh)`;
+                    piece.style.opacity = '0';
+                });
+                await new Promise(r => requestAnimationFrame(r));
 
-        async function enterAllPieces() {
-            const pieces = Array.from(document.querySelectorAll('.puzzle-piece'));
-            const enterDuration = 1500;
-            
-            // Ταξινόμηση ανά row (κάτω πρώτα)
-            pieces.sort((a,b) => parseFloat(b.dataset.targetY) - parseFloat(a.dataset.targetY));
-            
-            for(const [index, piece] of pieces.entries()) {
-                const initialX = parseFloat(piece.dataset.targetX) + (Math.random() - 0.5) * 1000;
-                const initialY = -100 - Math.random() * 500;
-                
-                // Αρχική θέση εκτός οθόνης
-                piece.style.transform = `translate(${initialX}px, ${initialY}px)`;
-                
-                // Κίνηση με καθυστέρηση
-                setTimeout(() => {
-                    piece.style.transform = `translate(${piece.dataset.targetX}px, ${piece.dataset.targetY}px)`;
-                }, index * 50);
+                // Φάση 3: Σπειροειδής εισαγωγή
+                for(let i = pieces.length - 1; i >= 0; i--) {
+                    const piece = pieces[i];
+                    const startX = piece.dataset.finalX - 100 + Math.random() * 200;
+                    
+                    piece.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    piece.style.transform = `translate(${startX}px, -100vh)`;
+                    piece.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        piece.style.transform = `translate(0,0)`;
+                    }, 100);
+                    
+                    await new Promise(r => setTimeout(r, 50));
+                }
+
+                // Φάση 4: Παύση 2s
+                await new Promise(r => setTimeout(r, 2000));
             }
-            await new Promise(resolve => setTimeout(resolve, enterDuration));
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             animationActive = false;
+            container.style.backgroundImage = "none";
+            pieces.forEach(p => p.remove());
         });
 
-        window.onload = createPuzzle;
+        window.onload = () => {
+            initializePuzzle();
+            animationCycle();
+        };
     </script>
 </body>
 </html>
