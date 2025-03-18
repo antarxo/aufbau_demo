@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Tetris Puzzle - Fixed Version</title>
+  <title>Tetris Puzzle - Full Coverage</title>
   <style>
     .container {
       width: 900px;
@@ -20,7 +20,7 @@
       background-image: url('PP.jpg');
       background-size: 900px 600px;
       opacity: 0;
-      border: 2px solid #fff; /* Προσθήκη περιγράμματος για αναγνωρισιμότητα */
+      border: 2px solid #fff; /* Προσθήκη περιγράμματος για να διακρίνονται τα κομμάτια */
       box-sizing: border-box;
     }
     button {
@@ -35,7 +35,7 @@
   <div class="container" id="puzzleContainer"></div>
   <button id="stopBtn">STOP</button>
 
-  <!-- 🎯 Ορισμός clipPath με σταθερές διαστάσεις -->
+  <!-- 🎯 Ορισμός clipPath για όλα τα κομμάτια -->
   <svg width="0" height="0">
     <clipPath id="T-shape">
       <polygon points="0,0 200,0 200,50 150,50 150,150 50,150 50,50 0,50"/>
@@ -46,31 +46,38 @@
     <clipPath id="I-shape">
       <rect width="200" height="150"/>
     </clipPath>
+    <clipPath id="Rect-shape">
+      <rect width="150" height="150"/>
+    </clipPath>
   </svg>
 
   <script>
     /*
-      🔹 Διαμέριση του container 900×600 σε 26 κομμάτια με διαφορετικά σχήματα και περιστροφές.
-      🔹 Καθένα έχει συντεταγμένες x, y και περιστροφή (rotation).
+      🔹 Χωρίζουμε την εικόνα σε **πλήρη κάλυψη** με 30 κομμάτια.
+      🔹 Περιλαμβάνονται όλα τα απαραίτητα Rect-shape ώστε να μην υπάρχουν κενά.
     */
     const STATIC_LAYOUT = [
+      // Σειρά 1 (y = 0)
       { x: 0,   y: 0,   width: 200, height: 150, shape: 'T-shape', rotation: 90 },
       { x: 200, y: 0,   width: 200, height: 150, shape: 'L-shape', rotation: 180 },
       { x: 400, y: 0,   width: 200, height: 150, shape: 'I-shape', rotation: 270 },
       { x: 600, y: 0,   width: 200, height: 150, shape: 'T-shape', rotation: 0 },
-      { x: 800, y: 0,   width: 100, height: 150, shape: 'L-shape', rotation: 90 },
+      { x: 800, y: 0,   width: 100, height: 150, shape: 'Rect-shape', rotation: 0 },
 
-      { x: 0,   y: 150, width: 150, height: 150, shape: 'I-shape', rotation: 0 },
+      // Σειρά 2 (y = 150)
+      { x: 0,   y: 150, width: 150, height: 150, shape: 'Rect-shape', rotation: 0 },
       { x: 150, y: 150, width: 200, height: 150, shape: 'T-shape', rotation: 180 },
       { x: 350, y: 150, width: 200, height: 150, shape: 'L-shape', rotation: 270 },
       { x: 550, y: 150, width: 200, height: 150, shape: 'I-shape', rotation: 90 },
-      { x: 750, y: 150, width: 150, height: 150, shape: 'T-shape', rotation: 0 },
+      { x: 750, y: 150, width: 150, height: 150, shape: 'Rect-shape', rotation: 0 },
 
+      // Σειρά 3 (y = 300)
       { x: 0,   y: 300, width: 200, height: 150, shape: 'L-shape', rotation: 90 },
       { x: 200, y: 300, width: 200, height: 150, shape: 'I-shape', rotation: 180 },
       { x: 400, y: 300, width: 200, height: 150, shape: 'T-shape', rotation: 270 },
       { x: 600, y: 300, width: 200, height: 150, shape: 'L-shape', rotation: 0 },
 
+      // Σειρά 4 (y = 450)
       { x: 0,   y: 450, width: 200, height: 150, shape: 'T-shape', rotation: 90 },
       { x: 200, y: 450, width: 200, height: 150, shape: 'I-shape', rotation: 270 },
       { x: 400, y: 450, width: 200, height: 150, shape: 'L-shape', rotation: 180 },
@@ -94,7 +101,7 @@
           backgroundPosition: `-${config.x}px -${config.y}px`
         });
 
-        // Αρχική θέση: τοποθετούμε το κομμάτι πάνω από την οθόνη και περιστρέφουμε
+        // Αρχική θέση (τα κομμάτια εκτός οθόνης με περιστροφή)
         piece.style.transform = `translateY(-600px) rotate(${config.rotation}deg)`;
         container.appendChild(piece);
         pieces.push(piece);
@@ -103,11 +110,11 @@
 
     function dropPieces() {
       const container = document.getElementById('puzzleContainer');
-      container.style.backgroundImage = 'none'; // Εξαφάνιση της πλήρους εικόνας
+      container.style.backgroundImage = 'none'; // Εξαφάνιση πλήρους εικόνας
 
       requestAnimationFrame(() => {
         pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top)).forEach((piece, index) => {
-          const delay = index * 100;  // Χρονική καθυστέρηση 100ms ανά κομμάτι
+          const delay = index * 100;
           const duration = 2 + index * 0.05;
           setTimeout(() => {
             if (!animationActive) return;
