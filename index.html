@@ -3,8 +3,8 @@
 <head>
     <style>
         .container {
-            width: 800px;
-            height: 600px;
+            width: 900px;
+            height: 506px;
             position: relative;
             margin: 20px auto;
             overflow: hidden;
@@ -12,13 +12,13 @@
         }
 
         .puzzle-piece {
-            width: 50px;
-            height: 50px;
+            width: 50px;  /* 900px / 18 κομμάτια = 50px */
+            height: 50.6px; /* 506px / 10 κομμάτια = 50.6px */
             position: absolute;
             background-image: url('PP.jpg');
-            background-size: 800px 600px;
+            background-size: 900px 506px;
             transition: all 1s ease-in-out;
-            clip-path: url(#jigsawPath);
+            clip-path: url(#classicJigsaw);
         }
 
         button {
@@ -33,28 +33,40 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
+    <!-- SVG για κλασικές γλωσσίδες -->
     <svg width="0" height="0">
-        <clipPath id="jigsawPath">
-            <path d="M0,20 Q0,0 20,0 L30,0 Q50,-10 70,0 L80,0 Q100,0 100,20 L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 L70,100 Q50,110 30,100 L20,100 Q0,100 0,80 L0,70 Q10,50 0,30 Z"/>
+        <clipPath id="classicJigsaw">
+            <!-- Απλές συμμετρικές γλωσσίδες -->
+            <path d="M0,20 Q0,0 20,0 L30,0 Q50,10 70,0 L80,0 Q100,0 100,20 
+                     L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 
+                     L70,100 Q50,90 30,100 L20,100 Q0,100 0,80 
+                     L0,70 Q10,50 0,30 Z"/>
         </clipPath>
     </svg>
 
     <script>
-        const ROWS = 12;
-        const COLS = 16;
+        const COLS = 18;  // 900px / 50px = 18 κομμάτια
+        const ROWS = 10;   // 506px / 50.6px ≈ 10 κομμάτια
         let animationActive = true;
         let timeoutId;
-        
+
         function createPuzzle() {
             const container = document.getElementById('puzzleContainer');
             container.innerHTML = '';
-            
+
             for(let row = 0; row < ROWS; row++) {
                 for(let col = 0; col < COLS; col++) {
                     const piece = document.createElement('div');
                     piece.className = 'puzzle-piece';
-                    piece.style.backgroundPosition = `-${col * 50}px -${row * 50}px`;
-                    piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
+                    
+                    // Θέση εικόνας
+                    piece.style.backgroundPosition = 
+                        `-${col * 50}px -${row * 50.6}px`;
+                    
+                    // Τυχαία αρχική θέση
+                    piece.style.transform = 
+                        `translate(${Math.random() * 800}px, ${Math.random() * 400}px)`;
+                    
                     container.appendChild(piece);
                 }
             }
@@ -62,28 +74,27 @@
 
         function solvePuzzle() {
             document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
-                const targetX = (index % COLS) * 50;
-                const targetY = Math.floor(index / COLS) * 50;
-                piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
+                const col = index % COLS;
+                const row = Math.floor(index / COLS);
+                piece.style.transform = `translate(${col * 50}px, ${row * 50.6}px)`;
             });
         }
 
         function scramblePuzzle() {
             document.querySelectorAll('.puzzle-piece').forEach(piece => {
-                piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
+                piece.style.transform = 
+                    `translate(${Math.random() * 800}px, ${Math.random() * 400}px)`;
             });
         }
 
         function animatePuzzle() {
             if (!animationActive) return;
 
-            // Επαναφορά και παύση 2s
             solvePuzzle();
             timeoutId = setTimeout(() => {
-                // Ανακάτεμα και παύση 2s
                 scramblePuzzle();
                 timeoutId = setTimeout(animatePuzzle, 2000);
-            }, 2000); 
+            }, 2000);
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
