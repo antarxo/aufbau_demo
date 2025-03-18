@@ -8,17 +8,18 @@
             position: relative;
             margin: 20px auto;
             overflow: hidden;
+            background: #f0f0f0; /* Χρώμα κενού */
             border: 2px solid #333;
         }
 
         .puzzle-piece {
-            width: 50px;  /* 900px / 18 κομμάτια = 50px */
-            height: 50.6px; /* 506px / 10 κομμάτια = 50.6px */
+            width: 50px;
+            height: 50.6px;
             position: absolute;
             background-image: url('PP.jpg');
             background-size: 900px 506px;
             transition: all 1s ease-in-out;
-            clip-path: url(#classicJigsaw);
+            clip-path: url(#jigsawPattern);
         }
 
         button {
@@ -33,20 +34,24 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
-    <!-- SVG για κλασικές γλωσσίδες -->
+    <!-- Βελτιωμένο SVG pattern με εναλλαγή γλωσσίδων -->
     <svg width="0" height="0">
-        <clipPath id="classicJigsaw">
-            <!-- Απλές συμμετρικές γλωσσίδες -->
-            <path d="M0,20 Q0,0 20,0 L30,0 Q50,10 70,0 L80,0 Q100,0 100,20 
-                     L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 
-                     L70,100 Q50,90 30,100 L20,100 Q0,100 0,80 
-                     L0,70 Q10,50 0,30 Z"/>
+        <clipPath id="jigsawPattern">
+            <!-- Κλασικό σχήμα με εναλλασσόμενες γλωσσίδες -->
+            <path d="M0,20 Q0,5 15,5 
+                     L35,5 Q50,0 65,5 
+                     L85,5 Q100,5 100,20 
+                     L100,35 Q95,50 100,65 
+                     L100,85 Q95,100 80,100 
+                     L65,100 Q50,95 35,100 
+                     L15,100 Q5,95 0,80 
+                     L0,65 Q5,50 0,35 Z"/>
         </clipPath>
     </svg>
 
     <script>
-        const COLS = 18;  // 900px / 50px = 18 κομμάτια
-        const ROWS = 10;   // 506px / 50.6px ≈ 10 κομμάτια
+        const COLS = 18;
+        const ROWS = 10;
         let animationActive = true;
         let timeoutId;
 
@@ -59,13 +64,12 @@
                     const piece = document.createElement('div');
                     piece.className = 'puzzle-piece';
                     
-                    // Θέση εικόνας
-                    piece.style.backgroundPosition = 
-                        `-${col * 50}px -${row * 50.6}px`;
+                    // Προσομοίωση "ελλειπόντων" τμημάτων με offset
+                    const bgX = col * 50 + (Math.random() > 0.5 ? -2 : 2);
+                    const bgY = row * 50.6 + (Math.random() > 0.5 ? -2 : 2);
                     
-                    // Τυχαία αρχική θέση
-                    piece.style.transform = 
-                        `translate(${Math.random() * 800}px, ${Math.random() * 400}px)`;
+                    piece.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+                    piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
                     
                     container.appendChild(piece);
                 }
@@ -76,20 +80,21 @@
             document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
                 const col = index % COLS;
                 const row = Math.floor(index / COLS);
-                piece.style.transform = `translate(${col * 50}px, ${row * 50.6}px)`;
+                piece.style.backgroundPosition = `-${col*50}px -${row*50.6}px`;
+                piece.style.transform = `translate(${col*50}px, ${row*50.6}px)`;
             });
         }
 
         function scramblePuzzle() {
             document.querySelectorAll('.puzzle-piece').forEach(piece => {
-                piece.style.transform = 
-                    `translate(${Math.random() * 800}px, ${Math.random() * 400}px)`;
+                piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
+                piece.style.backgroundPosition = `-${Math.random()*900}px -${Math.random()*506}px`;
             });
         }
 
         function animatePuzzle() {
             if (!animationActive) return;
-
+            
             solvePuzzle();
             timeoutId = setTimeout(() => {
                 scramblePuzzle();
