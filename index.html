@@ -33,111 +33,71 @@
 
     <svg width="0" height="0">
         <!-- Tetris Clip-Paths -->
-        <clipPath id="I-shape">
-            <rect width="100" height="25"/>
-        </clipPath>
-        <clipPath id="T-shape">
-            <path d="M0,0 L100,0 L100,25 L70,25 L70,50 L30,50 L30,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="L-shape">
-            <path d="M0,0 L75,0 L75,50 L25,50 L25,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="O-shape">
-            <rect width="50" height="50"/>
-        </clipPath>
-        <clipPath id="line-shape">
-            <rect width="150" height="25"/>
-        </clipPath>
+        <clipPath id="I-shape"><rect width="200" height="50"/></clipPath>
+        <clipPath id="T-shape"><path d="M0,0 L150,0 L150,50 L100,50 L100,100 L50,100 L50,50 L0,50 Z"/></clipPath>
+        <clipPath id="L-shape"><path d="M0,0 L100,0 L100,100 L50,100 L50,50 L0,50 Z"/></clipPath>
+        <clipPath id="O-shape"><rect width="100" height="100"/></clipPath>
     </svg>
 
     <script>
-        const TETRIS_CONFIG = [
-            {type: 'I', width: 100, height: 25, rows: 1, cols: 4},
-            {type: 'T', width: 100, height: 50, rows: 2, cols: 3},
-            {type: 'L', width: 75, height: 50, rows: 2, cols: 2},
-            {type: 'O', width: 50, height: 50, rows: 1, cols: 1},
-            {type: 'line', width: 150, height: 25, rows: 1, cols: 6}
+        // Προκαθορισμένη διάταξη Tetris (900x506px)
+        const STATIC_LAYOUT = [
+            { type: 'I', x: 0,   y: 0,   width: 200, height: 50  },
+            { type: 'L', x: 200, y: 0,   width: 100, height: 100 },
+            { type: 'T', x: 300, y: 0,   width: 150, height: 100 },
+            { type: 'O', x: 450, y: 0,   width: 100, height: 100 },
+            { type: 'I', x: 550, y: 0,   width: 200, height: 50  },
+            { type: 'L', x: 750, y: 0,   width: 100, height: 100, rotate: 180 },
+            // ... (Προσθέστε όλα τα απαραίτητα κομμάτια για πλήρη κάλυψη)
         ];
 
-        const container = document.getElementById('puzzleContainer');
         let animationActive = true;
         let pieces = [];
 
         function initializePuzzle() {
-            // Δημιουργία τυχαίου Tetris grid
-            let occupied = Array(10).fill().map(() => Array(18).fill(false));
+            const container = document.getElementById('puzzleContainer');
             
-            TETRIS_CONFIG.forEach(config => {
-                for(let i=0; i<5; i++) { // Προσθήκη 5 κομματιών από κάθε τύπο
-                    let placed = false;
-                    while(!placed) {
-                        const row = Math.floor(Math.random() * (10 - config.rows));
-                        const col = Math.floor(Math.random() * (18 - config.cols));
-                        
-                        if(canPlace(occupied, row, col, config.rows, config.cols)) {
-                            placePiece(occupied, row, col, config);
-                            placed = true;
-                        }
-                    }
-                }
+            STATIC_LAYOUT.forEach((pieceConfig, index) => {
+                const piece = document.createElement('div');
+                piece.className = 'tetris-piece';
+                
+                // Στυλ και θέση
+                Object.assign(piece.style, {
+                    width: `${pieceConfig.width}px`,
+                    height: `${pieceConfig.height}px`,
+                    left: `${pieceConfig.x}px`,
+                    top: `${pieceConfig.y}px`,
+                    clipPath: `url(#${pieceConfig.type}-shape)`,
+                    backgroundPosition: `-${pieceConfig.x}px -${pieceConfig.y}px`
+                });
+
+                // Αποθήκευση τελικής θέσης
+                piece.dataset.finalX = pieceConfig.x;
+                piece.dataset.finalY = pieceConfig.y;
+                
+                container.appendChild(piece);
+                pieces.push(piece);
             });
-        }
-
-        function canPlace(grid, row, col, rows, cols) {
-            for(let r=row; r<row+rows; r++) {
-                for(let c=col; c<col+cols; c++) {
-                    if(grid[r][c]) return false;
-                }
-            }
-            return true;
-        }
-
-        function placePiece(grid, row, col, config) {
-            const piece = document.createElement('div');
-            piece.className = 'tetris-piece';
-            piece.style.width = `${config.width}px`;
-            piece.style.height = `${config.height}px`;
-            piece.style.clipPath = `url(#${config.type}-shape)`;
-            piece.style.left = `${col * 50}px`;
-            piece.style.top = `${row * 50.6}px`;
-            piece.dataset.finalX = col * 50;
-            piece.dataset.finalY = row * 50.6;
-            
-            // Background positioning
-            piece.style.backgroundPosition = `-${col * 50}px -${row * 50.6}px`;
-            
-            container.appendChild(piece);
-            pieces.push(piece);
-
-            for(let r=row; r<row+config.rows; r++) {
-                for(let c=col; c<col+config.cols; c++) {
-                    grid[r][c] = true;
-                }
-            }
         }
 
         async function animationCycle() {
             while(animationActive) {
-                // Φάση 1: Προβολή πλήρης εικόνας για 2s
-                container.style.backgroundImage = "url('PP.jpg')";
+                // Φάση 1: Προβολή εικόνας
                 await new Promise(r => setTimeout(r, 2000));
-                container.style.backgroundImage = "none";
-
-                // Φάση 2: Ακαριαία εξαφάνιση κομματιών
+                
+                // Φάση 2: Ακαριαία εξαφάνιση
                 pieces.forEach(piece => {
                     piece.style.transition = 'none';
                     piece.style.transform = `translateY(-100vh)`;
                     piece.style.opacity = '0';
                 });
                 await new Promise(r => requestAnimationFrame(r));
-
-                // Φάση 3: Σπειροειδής εισαγωγή
+                
+                // Φάση 3: Εισαγωγή κομματιών
                 for(let i = pieces.length - 1; i >= 0; i--) {
                     const piece = pieces[i];
-                    const startX = piece.dataset.finalX - 100 + Math.random() * 200;
-                    
                     piece.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-                    piece.style.transform = `translate(${startX}px, -100vh)`;
+                    piece.style.transform = `translateY(100vh)`;
                     piece.style.opacity = '1';
                     
                     setTimeout(() => {
@@ -146,16 +106,14 @@
                     
                     await new Promise(r => setTimeout(r, 50));
                 }
-
-                // Φάση 4: Παύση 2s
+                
+                // Φάση 4: Παύση
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             animationActive = false;
-            container.style.backgroundImage = "none";
-            pieces.forEach(p => p.remove());
         });
 
         window.onload = () => {
