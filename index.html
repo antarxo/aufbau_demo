@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Tetris Puzzle - Χωρισμός με Tetris σχήματα</title>
+  <title>Tetris Puzzle - Ποικιλία σε μονάδες των 50</title>
   <style>
     .container {
       width: 900px;
@@ -32,21 +32,21 @@
   <div class="container" id="puzzleContainer"></div>
   <button id="stopBtn">STOP</button>
 
-  <!-- Ορισμός SVG clipPaths για τα Tetris σχήματα -->
+  <!-- Ορισμός SVG clipPaths με διαστάσεις πολλαπλάσια του 50 -->
   <svg width="0" height="0">
-    <!-- T-σχήμα 4×3: Το bounding box είναι 400×300 -->
+    <!-- T-σχήμα 4x3 (bounding box 400×300 = 8×6 cells των 50px) -->
     <clipPath id="T-shape">
       <polygon points="0,0 400,0 400,100 300,100 300,300 100,300 100,100 0,100"/>
     </clipPath>
-    <!-- L-σχήμα 4×3: Το bounding box είναι 400×300 -->
+    <!-- L-σχήμα 4x3 -->
     <clipPath id="L-shape">
       <polygon points="0,0 0,300 400,300 400,200 200,200 200,0"/>
     </clipPath>
-    <!-- I-σχήμα 1×3 (100×300): Απλό ορθογώνιο -->
+    <!-- I-σχήμα 1x3 (100×300 = 2×6 cells) -->
     <clipPath id="I1-shape">
       <rect width="100" height="300"/>
     </clipPath>
-    <!-- Ορθογώνια για τα υπόλοιπα σχήματα -->
+    <!-- Ορθογώνια σχήματα -->
     <clipPath id="I-shape-4x2">
       <rect width="400" height="200"/>
     </clipPath>
@@ -62,26 +62,34 @@
   </svg>
 
   <script>
-    // Ορισμός του στατικού layout:
+    /* 
+      Στατικό layout που καλύπτει πλήρως το container 900x600.
+      (Οι διαστάσεις είναι σε pixels και πολλαπλάσια του 50.)
+      Διάταξη:
+       - Πάνω σειρά (y: 0 έως 300): 
+           • Piece A: T-shape 400×300 στο αριστερό μέρος.
+           • Piece B: L-shape 400×300 στο κέντρο.
+           • Piece C: I-σχήμα 1×3 (100×300) στα δεξιά.
+       - Κάτω πάνω (y: 300 έως 500):
+           • Piece D: I-shape-4x2 400×200.
+           • Piece E: I-shape-3x2 300×200.
+           • Piece F: I-shape-2x2 200×200.
+       - Κάτω κάτω (y: 500 έως 600):
+           • Piece G: I-shape-9x1 900×100.
+    */
     const STATIC_LAYOUT = [
-      // Πάνω σειρά (ύψος 300px)
-      { type: 'T-shape',   x: 0,   y: 0,   width: 400, height: 300 },  // Piece A: T-σχήμα
-      { type: 'L-shape',   x: 400, y: 0,   width: 400, height: 300 },  // Piece B: L-σχήμα
-      { type: 'I1-shape',  x: 800, y: 0,   width: 100, height: 300 },  // Piece C: I-σχήμα 1×3
-
-      // Κάτω πάνω μέρος (ύψος 200px, από y=300 έως y=500)
-      { type: 'I-shape-4x2', x: 0,   y: 300, width: 400, height: 200 },  // Piece D: I-σχήμα 4×2
-      { type: 'I-shape-3x2', x: 400, y: 300, width: 300, height: 200 },  // Piece E: I-σχήμα 3×2
-      { type: 'I-shape-2x2', x: 700, y: 300, width: 200, height: 200 },  // Piece F: I-σχήμα 2×2
-
-      // Κάτω κάτω μέρος (ύψος 100px, από y=500 έως y=600)
-      { type: 'I-shape-9x1', x: 0,   y: 500, width: 900, height: 100 }   // Piece G: Ορθογώνιο που καλύπτει το κάτω strip
+      { type: 'T-shape',   x: 0,   y: 0,   width: 400, height: 300 },
+      { type: 'L-shape',   x: 400, y: 0,   width: 400, height: 300 },
+      { type: 'I1-shape',  x: 800, y: 0,   width: 100, height: 300 },
+      { type: 'I-shape-4x2', x: 0,   y: 300, width: 400, height: 200 },
+      { type: 'I-shape-3x2', x: 400, y: 300, width: 300, height: 200 },
+      { type: 'I-shape-2x2', x: 700, y: 300, width: 200, height: 200 },
+      { type: 'I-shape-9x1', x: 0,   y: 500, width: 900, height: 100 }
     ];
 
     let animationActive = true;
     let pieces = [];
 
-    // Δημιουργεί τα κομμάτια σύμφωνα με το layout
     function initializePuzzle() {
       const container = document.getElementById('puzzleContainer');
       STATIC_LAYOUT.forEach(config => {
@@ -100,27 +108,25 @@
       });
     }
 
-    // Η λειτουργία πτώσης: ξεκινάει από τα πιο χαμηλά κομμάτια (με μεγαλύτερο y) και ανεβάζεται προς τα πάνω.
     function dropPieces() {
-      // Τοποθετούμε αρχικά κάθε κομμάτι εκτός οθόνης (με μετατόπιση προς τα κάτω)
+      // Τοποθέτησε όλα τα κομμάτια πάνω από το container (translateY(-600px)) ώστε να «πέσουν» προς τα κάτω
       pieces.forEach(piece => {
         piece.style.transition = 'none';
-        piece.style.transform = 'translateY(600px)'; // ξεκινά από κάτω
-        piece.style.opacity = '0';
+        piece.style.transform = 'translateY(-600px)';
+        piece.style.opacity   = '0';
       });
 
       requestAnimationFrame(() => {
-        // Ταξινομούμε τα κομμάτια κατά φθίνουσα σειρά y (τα πιο χαμηλά πέφτουν πρώτα)
+        // Ταξινόμησε τα κομμάτια κατά φθίνουσα τιμή του y (τα πιο χαμηλά, δηλαδή με μεγαλύτερο y, θα πέσουν πρώτα)
         const sortedPieces = pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top));
         sortedPieces.forEach((piece, index) => {
-          // Ορίζουμε delay και διάρκεια ώστε τα πιο κάτω να κινούνται πιο αργά
-          const delay = index * 300; // 300ms ανά κομμάτι
-          const duration = 2 + index * 0.3; // μεγαλύτερος χρόνος πτώσης για τα πιο χαμηλά
+          const delay = index * 300;  // 300ms delay ανά κομμάτι
+          const duration = 2 + index * 0.3; // Τα πιο κάτω πέφτουν με μεγαλύτερη διάρκεια
           setTimeout(() => {
             if (!animationActive) return;
             piece.style.transition = `transform ${duration}s ease, opacity ${duration}s ease`;
             piece.style.opacity = '1';
-            piece.style.transform = 'translateY(0)';
+            piece.style.transform = 'translateY(0)';  // Μετακίνηση στη τελική θέση
           }, delay);
         });
       });
