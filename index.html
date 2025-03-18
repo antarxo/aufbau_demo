@@ -17,21 +17,15 @@
             position: absolute;
             background-image: url('PP.jpg');
             background-size: 800px 600px;
-            transition: all 2s ease-in-out;
-            clip-path: polygon(
-                0% 20%, 20% 0%, 80% 0%, 100% 20%,
-                100% 80%, 80% 100%, 20% 100%, 0% 80%
-            );
-        }
-
-        .puzzle-piece.solved {
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            transition: all 1s ease-in-out;
+            clip-path: url(#jigsawPath);
         }
 
         button {
             display: block;
             margin: 10px auto;
             padding: 10px 20px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -39,70 +33,64 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
+    <svg width="0" height="0">
+        <clipPath id="jigsawPath">
+            <!-- Βελτιωμένο σχήμα jigsaw με κλασικές γλωσσίδες -->
+            <path d="M0,20 Q0,0 20,0 L30,0 Q50,-10 70,0 L80,0 Q100,0 100,20 L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 L70,100 Q50,110 30,100 L20,100 Q0,100 0,80 L0,70 Q10,50 0,30 Z"/>
+        </clipPath>
+    </svg>
+
     <script>
         const ROWS = 12;
         const COLS = 16;
         let animationActive = true;
+        let timeoutId;
         
         function createPuzzle() {
             const container = document.getElementById('puzzleContainer');
+            container.innerHTML = '';
             
             for(let row = 0; row < ROWS; row++) {
                 for(let col = 0; col < COLS; col++) {
                     const piece = document.createElement('div');
                     piece.className = 'puzzle-piece';
-                    
-                    // Θέση εικόνας
-                    piece.style.backgroundPosition = 
-                        `-${col * 50}px -${row * 50}px`;
-                    
-                    // Αρχική τυχαία θέση
-                    piece.style.transform = 
-                        `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
-                    
+                    piece.style.backgroundPosition = `-${col * 50}px -${row * 50}px`;
+                    piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
                     container.appendChild(piece);
                 }
             }
         }
 
-        function solvePuzzle() {
-            const pieces = document.querySelectorAll('.puzzle-piece');
-            pieces.forEach((piece, index) => {
-                const row = Math.floor(index / COLS);
-                const col = index % COLS;
-                piece.style.transform = `translate(${col * 50}px, ${row * 50}px)`;
-                piece.classList.add('solved');
-            });
-        }
-
-        function scramblePuzzle() {
-            const pieces = document.querySelectorAll('.puzzle-piece');
-            pieces.forEach(piece => {
-                piece.style.transform = 
-                    `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
-                piece.classList.remove('solved');
-            });
-        }
-
-        function animationLoop() {
+        function animatePuzzle() {
             if(!animationActive) return;
             
-            solvePuzzle();
-            setTimeout(() => {
-                scramblePuzzle();
-                setTimeout(animationLoop, 2000);
-            }, 2000);
+            // Επαναφορά παζλ
+            document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
+                const targetX = (index % COLS) * 50;
+                const targetY = Math.floor(index / COLS) * 50;
+                piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
+            });
+
+            timeoutId = setTimeout(() => {
+                // Ανακάτεμα παζλ
+                document.querySelectorAll('.puzzle-piece').forEach(piece => {
+                    piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
+                });
+                
+                timeoutId = setTimeout(animatePuzzle, 1000);
+            }, 1000);
         }
 
         // Event listeners
         document.getElementById('stopBtn').addEventListener('click', () => {
             animationActive = false;
+            clearTimeout(timeoutId);
         });
 
         // Αρχικοποίηση
         window.onload = () => {
             createPuzzle();
-            animationLoop();
+            animatePuzzle();
         };
     </script>
 </body>
