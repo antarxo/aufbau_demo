@@ -1,77 +1,103 @@
 <!DOCTYPE html>
-<html lang="el">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Εναλλαγή Καταστάσεων με p5.js</title>
-  <!-- Φόρτωση της βιβλιοθήκης p5.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+    <style>
+        .container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            margin: 20px auto;
+            overflow: hidden;
+            border: 2px solid #333;
+        }
+
+        .puzzle-piece {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            background-image: url('PP.jpg');
+            background-size: 800px 600px;
+            transition: all 2s ease-in-out;
+            clip-path: polygon(
+                0% 20%, 20% 0%, 80% 0%, 100% 20%,
+                100% 80%, 80% 100%, 20% 100%, 0% 80%
+            );
+        }
+
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+        }
+    </style>
 </head>
 <body>
-  <script>
-    let positions;
-    let currentMode = "collapsed"; // αρχική κατάσταση
-    let toggleButton;
-    let canvasWidth, canvasHeight;
+    <div class="container" id="puzzleContainer"></div>
+    <button id="stopBtn">STOP</button>
 
-    // Προφόρτωση του αρχείου JSON
-    function preload() {
-      positions = loadJSON('positions.json');
-    }
-
-    function setup() {
-      // Υπολογισμός των μέγιστων διαστάσεων για να καλύψουμε και τις δύο καταστάσεις
-      let maxX = 0, maxY = 0;
-      for (let mode in positions) {
-        for (let key in positions[mode]) {
-          let rectData = positions[mode][key];
-          if (rectData.x + rectData.width > maxX) {
-            maxX = rectData.x + rectData.width;
-          }
-          if (rectData.y + rectData.height > maxY) {
-            maxY = rectData.y + rectData.height;
-          }
+    <script>
+        const ROWS = 12;
+        const COLS = 16;
+        let animationActive = true;
+        
+        function createPuzzle() {
+            const container = document.getElementById('puzzleContainer');
+            
+            for(let row = 0; row < ROWS; row++) {
+                for(let col = 0; col < COLS; col++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'puzzle-piece';
+                    
+                    // Background positioning
+                    piece.style.backgroundPosition = 
+                        `-${col * 50}px -${row * 50}px`;
+                    
+                    // Original position data
+                    piece.dataset.origX = col * 50;
+                    piece.dataset.origY = row * 50;
+                    
+                    container.appendChild(piece);
+                }
+            }
+            scramblePuzzle();
         }
-      }
-      canvasWidth = maxX + 20;
-      canvasHeight = maxY + 20;
-      createCanvas(canvasWidth, canvasHeight);
-      textAlign(CENTER, CENTER);
-      textSize(10);
 
-      // Δημιουργία κουμπιού για εναλλαγή κατάστασης
-      toggleButton = createButton("Εναλλαγή Κατάστασης");
-      toggleButton.position(10, canvasHeight + 20);
-      toggleButton.mousePressed(toggleState);
-    }
+        function scramblePuzzle() {
+            const pieces = document.querySelectorAll('.puzzle-piece');
+            pieces.forEach(piece => {
+                const x = Math.random() * 600;
+                const y = Math.random() * 400;
+                piece.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        }
 
-    // Συνάρτηση εναλλαγής μεταξύ "collapsed" και "expanded"
-    function toggleState() {
-      currentMode = (currentMode === "collapsed") ? "expanded" : "collapsed";
-    }
+        function solvePuzzle() {
+            const pieces = document.querySelectorAll('.puzzle-piece');
+            pieces.forEach(piece => {
+                piece.style.transform = `translate(0,0)`;
+            });
+        }
 
-    function draw() {
-      background(255);
-      noFill();
-      stroke(255, 0, 0);
+        function animationLoop() {
+            if(!animationActive) return;
+            
+            solvePuzzle();
+            setTimeout(() => {
+                scramblePuzzle();
+                setTimeout(animationLoop, 2000);
+            }, 2000);
+        }
 
-      // Εμφάνιση των ορθογωνίων βάσει της τρέχουσας κατάστασης
-      let modeData = positions[currentMode];
-      for (let key in modeData) {
-        let rectData = modeData[key];
-        rect(rectData.x, rectData.y, rectData.width, rectData.height);
-        fill(0);
-        noStroke();
-        text(key, rectData.x + rectData.width / 2, rectData.y + rectData.height / 2);
-        noFill();
-        stroke(255, 0, 0);
-      }
+        // Event listeners
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            animationActive = false;
+        });
 
-      // Εμφάνιση της τρέχουσας κατάστασης στην κορυφή
-      noStroke();
-      fill(0);
-      textSize(16);
-      text("Τρέχουσα κατάσταση: " + currentMode, width / 2, 20);
-    }
-  </script>
+        // Initialize
+        window.onload = () => {
+            createPuzzle();
+            animationLoop();
+        };
+    </script>
 </body>
 </html>
