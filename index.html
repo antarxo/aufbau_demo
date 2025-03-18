@@ -35,7 +35,6 @@
 
     <svg width="0" height="0">
         <clipPath id="jigsawPath">
-            <!-- Βελτιωμένο σχήμα jigsaw με κλασικές γλωσσίδες -->
             <path d="M0,20 Q0,0 20,0 L30,0 Q50,-10 70,0 L80,0 Q100,0 100,20 L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 L70,100 Q50,110 30,100 L20,100 Q0,100 0,80 L0,70 Q10,50 0,30 Z"/>
         </clipPath>
     </svg>
@@ -61,33 +60,37 @@
             }
         }
 
-        function animatePuzzle() {
-            if(!animationActive) return;
-            
-            // Επαναφορά παζλ
+        function solvePuzzle() {
             document.querySelectorAll('.puzzle-piece').forEach((piece, index) => {
                 const targetX = (index % COLS) * 50;
                 const targetY = Math.floor(index / COLS) * 50;
                 piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
             });
-
-            timeoutId = setTimeout(() => {
-                // Ανακάτεμα παζλ
-                document.querySelectorAll('.puzzle-piece').forEach(piece => {
-                    piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
-                });
-                
-                timeoutId = setTimeout(animatePuzzle, 1000);
-            }, 1000);
         }
 
-        // Event listeners
+        function scramblePuzzle() {
+            document.querySelectorAll('.puzzle-piece').forEach(piece => {
+                piece.style.transform = `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
+            });
+        }
+
+        function animatePuzzle() {
+            if (!animationActive) return;
+
+            // Επαναφορά και παύση 2s
+            solvePuzzle();
+            timeoutId = setTimeout(() => {
+                // Ανακάτεμα και παύση 2s
+                scramblePuzzle();
+                timeoutId = setTimeout(animatePuzzle, 2000);
+            }, 2000); 
+        }
+
         document.getElementById('stopBtn').addEventListener('click', () => {
             animationActive = false;
             clearTimeout(timeoutId);
         });
 
-        // Αρχικοποίηση
         window.onload = () => {
             createPuzzle();
             animatePuzzle();
