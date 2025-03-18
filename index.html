@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Tetris Puzzle - Outlines & More Pieces</title>
+  <title>Tetris Puzzle - Πολλαπλά Κομμάτια</title>
   <style>
     .container {
       width: 900px;
@@ -35,81 +35,101 @@
   <div class="container" id="puzzleContainer"></div>
   <button id="stopBtn">STOP</button>
 
-  <!-- Ορισμός SVG clipPaths για τα σχήματα (διαστάσεις πολλαπλάσια του 50) -->
+  <!-- Ορισμός clipPaths σε ποσοστιαίες μονάδες για δυναμική κλιμάκωση -->
   <svg width="0" height="0">
-    <!-- T-small: bounding box 200×150 -->
-    <clipPath id="T-small">
-      <polygon points="0,0 200,0 200,50 150,50 150,150 50,150 50,50 0,50"/>
+    <clipPath id="T-shape">
+      <!-- Σχήμα T: ένα πάνω μπαρ και ένα κέντρο που εκτείνεται προς τα κάτω -->
+      <polygon points="0% 0%, 100% 0%, 100% 30%, 65% 30%, 65% 100%, 35% 100%, 35% 30%, 0% 30%"/>
     </clipPath>
-    <!-- L-small: bounding box 200×150 -->
-    <clipPath id="L-small">
-      <polygon points="0,0 0,150 200,150 200,100 100,100 100,0"/>
+    <clipPath id="L-shape">
+      <!-- Σχήμα L: ολόκληρη η πάνω πλευρά και η κάτω αριστερή γωνία -->
+      <polygon points="0% 0%, 100% 0%, 100% 70%, 70% 70%, 70% 100%, 0% 100%"/>
     </clipPath>
-    <!-- I-shape pieces ως απλά ορθογώνια -->
-    <clipPath id="I-500x150">
-      <rect width="500" height="150"/>
-    </clipPath>
-    <clipPath id="I-300x150">
-      <rect width="300" height="150"/>
-    </clipPath>
-    <clipPath id="I-400x150">
-      <rect width="400" height="150"/>
-    </clipPath>
-    <clipPath id="I-200x150">
-      <rect width="200" height="150"/>
-    </clipPath>
-    <clipPath id="I-450x150">
-      <rect width="450" height="150"/>
-    </clipPath>
-    <clipPath id="I-250x150">
-      <rect width="250" height="150"/>
+    <clipPath id="I-shape">
+      <!-- Απλό ορθογώνιο -->
+      <rect x="0" y="0" width="100%" height="100%"/>
     </clipPath>
   </svg>
 
   <script>
     /* 
-      Στατικό layout που καλύπτει το container 900×600, χωρισμένο σε 4 σειρές των 150px ύψους.
-      Δημιουργούνται 13 κομμάτια με τα παρακάτω χαρακτηριστικά:
+      Ορίζουμε το STATIC_LAYOUT με 26 κομμάτια που καλύπτουν το container 900×600.
+      Κάθε αντικείμενο έχει:
+        - x, y: θέση στο container
+        - width, height: διαστάσεις (σε pixels, πολλαπλάσια του 50)
+        - shape: "T-shape", "L-shape" ή "I-shape" (θα χρησιμοποιηθεί στο clipPath)
+        - rotation: η αρχική περιστροφή (σε μοίρες) με την οποία "κόβεται" το κομμάτι
+     
+      Το layout χωρίζεται σε 4 σειρές (ύψος 150px η κάθε μία):
       
-      ** Σειρά 1 (y = 0, ύψος 150px):
-         - Piece A: T-small, x=0, width=200, rotation: 90°
-         - Piece B: L-small, x=200, width=200, rotation: 180°
-         - Piece C: I-500x150, x=400, width=500, rotation: 270°
-      
-      ** Σειρά 2 (y = 150):
-         - Piece D: I-300x150, x=0, width=300, rotation: 0°
-         - Piece E: T-small, x=300, width=200, rotation: 90°
-         - Piece F: I-400x150, x=500, width=400, rotation: 270°
-      
-      ** Σειρά 3 (y = 300):
-         - Piece G: L-small, x=0, width=200, rotation: 0°
-         - Piece H: I-300x150, x=200, width=300, rotation: 90°
-         - Piece I: T-small, x=500, width=200, rotation: 180°
-         - Piece J: I-200x150, x=700, width=200, rotation: 270°
-      
-      ** Σειρά 4 (y = 450) – "κόψε" και την τελευταία σειρά σε κομμάτια:
-         - Piece K: I-450x150, x=0, width=450, rotation: 0°
-         - Piece L: L-small, x=450, width=200, rotation: 90°
-         - Piece M: I-250x150, x=650, width=250, rotation: 180°
+      * Σειρά 1 (y = 0):
+          A: x=0,   width=100, shape T, rotation 90
+          B: x=100, width=150, shape L, rotation 180
+          C: x=250, width=100, shape I, rotation 270
+          D: x=350, width=150, shape T, rotation 0
+          E: x=500, width=200, shape L, rotation 90
+          F: x=700, width=200, shape I, rotation 180
+          
+      * Σειρά 2 (y = 150):
+          G: x=0,   width=100, shape I, rotation 90
+          H: x=100, width=100, shape T, rotation 180
+          I: x=200, width=150, shape L, rotation 270
+          J: x=350, width=150, shape I, rotation 0
+          K: x=500, width=100, shape T, rotation 90
+          L: x=600, width=150, shape L, rotation 180
+          M: x=750, width=150, shape I, rotation 270
+          
+      * Σειρά 3 (y = 300):
+          N: x=0,   width=150, shape T, rotation 0
+          O: x=150, width=150, shape L, rotation 90
+          P: x=300, width=150, shape I, rotation 180
+          Q: x=450, width=150, shape T, rotation 270
+          R: x=600, width=150, shape L, rotation 0
+          S: x=750, width=150, shape I, rotation 90
+          
+      * Σειρά 4 (y = 450):
+          T: x=0,   width=100, shape T, rotation 180
+          U: x=100, width=150, shape L, rotation 270
+          V: x=250, width=100, shape I, rotation 0
+          W: x=350, width=150, shape T, rotation 90
+          X: x=500, width=100, shape L, rotation 0
+          Y: x=600, width=150, shape I, rotation 90
+          Z: x=750, width=150, shape T, rotation 180
     */
     const STATIC_LAYOUT = [
       // Σειρά 1 (y = 0)
-      { type: 'T-small',    x: 0,   y: 0,   width: 200, height: 150, rotation: 90 },
-      { type: 'L-small',    x: 200, y: 0,   width: 200, height: 150, rotation: 180 },
-      { type: 'I-500x150',  x: 400, y: 0,   width: 500, height: 150, rotation: 270 },
+      { x: 0,   y: 0,   width: 100, height: 150, shape: 'T-shape', rotation: 90 },
+      { x: 100, y: 0,   width: 150, height: 150, shape: 'L-shape', rotation: 180 },
+      { x: 250, y: 0,   width: 100, height: 150, shape: 'I-shape', rotation: 270 },
+      { x: 350, y: 0,   width: 150, height: 150, shape: 'T-shape', rotation: 0 },
+      { x: 500, y: 0,   width: 200, height: 150, shape: 'L-shape', rotation: 90 },
+      { x: 700, y: 0,   width: 200, height: 150, shape: 'I-shape', rotation: 180 },
+      
       // Σειρά 2 (y = 150)
-      { type: 'I-300x150',  x: 0,   y: 150, width: 300, height: 150, rotation: 0 },
-      { type: 'T-small',    x: 300, y: 150, width: 200, height: 150, rotation: 90 },
-      { type: 'I-400x150',  x: 500, y: 150, width: 400, height: 150, rotation: 270 },
+      { x: 0,   y: 150, width: 100, height: 150, shape: 'I-shape', rotation: 90 },
+      { x: 100, y: 150, width: 100, height: 150, shape: 'T-shape', rotation: 180 },
+      { x: 200, y: 150, width: 150, height: 150, shape: 'L-shape', rotation: 270 },
+      { x: 350, y: 150, width: 150, height: 150, shape: 'I-shape', rotation: 0 },
+      { x: 500, y: 150, width: 100, height: 150, shape: 'T-shape', rotation: 90 },
+      { x: 600, y: 150, width: 150, height: 150, shape: 'L-shape', rotation: 180 },
+      { x: 750, y: 150, width: 150, height: 150, shape: 'I-shape', rotation: 270 },
+      
       // Σειρά 3 (y = 300)
-      { type: 'L-small',    x: 0,   y: 300, width: 200, height: 150, rotation: 0 },
-      { type: 'I-300x150',  x: 200, y: 300, width: 300, height: 150, rotation: 90 },
-      { type: 'T-small',    x: 500, y: 300, width: 200, height: 150, rotation: 180 },
-      { type: 'I-200x150',  x: 700, y: 300, width: 200, height: 150, rotation: 270 },
+      { x: 0,   y: 300, width: 150, height: 150, shape: 'T-shape', rotation: 0 },
+      { x: 150, y: 300, width: 150, height: 150, shape: 'L-shape', rotation: 90 },
+      { x: 300, y: 300, width: 150, height: 150, shape: 'I-shape', rotation: 180 },
+      { x: 450, y: 300, width: 150, height: 150, shape: 'T-shape', rotation: 270 },
+      { x: 600, y: 300, width: 150, height: 150, shape: 'L-shape', rotation: 0 },
+      { x: 750, y: 300, width: 150, height: 150, shape: 'I-shape', rotation: 90 },
+      
       // Σειρά 4 (y = 450)
-      { type: 'I-450x150',  x: 0,   y: 450, width: 450, height: 150, rotation: 0 },
-      { type: 'L-small',    x: 450, y: 450, width: 200, height: 150, rotation: 90 },
-      { type: 'I-250x150',  x: 650, y: 450, width: 250, height: 150, rotation: 180 }
+      { x: 0,   y: 450, width: 100, height: 150, shape: 'T-shape', rotation: 180 },
+      { x: 100, y: 450, width: 150, height: 150, shape: 'L-shape', rotation: 270 },
+      { x: 250, y: 450, width: 100, height: 150, shape: 'I-shape', rotation: 0 },
+      { x: 350, y: 450, width: 150, height: 150, shape: 'T-shape', rotation: 90 },
+      { x: 500, y: 450, width: 100, height: 150, shape: 'L-shape', rotation: 0 },
+      { x: 600, y: 450, width: 150, height: 150, shape: 'I-shape', rotation: 90 },
+      { x: 750, y: 450, width: 150, height: 150, shape: 'T-shape', rotation: 180 }
     ];
 
     let animationActive = true;
@@ -125,10 +145,11 @@
           height: config.height + 'px',
           left: config.x + 'px',
           top: config.y + 'px',
-          clipPath: `url(#${config.type})`,
+          clipPath: `url(#${config.shape})`,
+          /* Ρυθμίζουμε το backgroundPosition ώστε να "κόβεται" το σωστό τμήμα της εικόνας */
           backgroundPosition: `-${config.x}px -${config.y}px`
         });
-        // Αρχική θέση: τα κομμάτια τοποθετούνται έξω από την οθόνη (πάνω) με την προκαθορισμένη περιστροφή.
+        // Αρχική θέση: τοποθετούμε το κομμάτι έξω από την οθόνη (πάνω) με την προκαθορισμένη περιστροφή
         piece.style.transform = `translateY(-600px) rotate(${config.rotation}deg)`;
         container.appendChild(piece);
         pieces.push(piece);
@@ -137,20 +158,20 @@
 
     function dropPieces() {
       const container = document.getElementById('puzzleContainer');
-      // Απομακρύνουμε το πλήρες background για να εμφανίζονται μόνο τα κομμάτια.
+      // Αφαιρούμε το πλήρες background ώστε να φαίνονται μόνο τα κομμάτια
       container.style.backgroundImage = 'none';
 
       requestAnimationFrame(() => {
-        // Ταξινομούμε τα κομμάτια κατά φθίνουσα τιμή του y (τα πιο χαμηλά πέφτουν πρώτα).
+        // Ταξινομούμε τα κομμάτια κατά τη τιμή του y (τα πιο χαμηλά πέφτουν πρώτα)
         const sortedPieces = pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top));
         sortedPieces.forEach((piece, index) => {
-          const delay = index * 150;  // 150ms delay ανά κομμάτι
-          const duration = 2 + index * 0.1; // Διάρκεια του animation
+          const delay = index * 100;  // Μικρότερο delay για πιο "συνεχή" πτώση
+          const duration = 2 + index * 0.05; // Μικρή αύξηση στη διάρκεια
           setTimeout(() => {
             if (!animationActive) return;
             piece.style.transition = `transform ${duration}s ease, opacity ${duration}s ease`;
             piece.style.opacity = '1';
-            // Κατά το animation, τα κομμάτια πέφτουν στη σωστή τους θέση και περιστρέφονται στο 0°.
+            // Το κομμάτι πέφτει στη σωστή του θέση και περιστρέφεται στο 0° για να συναρμολογηθεί η εικόνα
             piece.style.transform = 'translateY(0) rotate(0deg)';
           }, delay);
         });
