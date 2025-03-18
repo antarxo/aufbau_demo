@@ -13,9 +13,9 @@
 
         .tetris-piece {
             position: absolute;
-            background-image: url('PP.jpg');
+            background-image: url('PP.jpg'); /* βάλε εδώ το σωστό path προς την εικόνα */
             background-size: 900px 506px;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s;
             opacity: 0;
         }
 
@@ -31,17 +31,27 @@
     <div class="container" id="puzzleContainer"></div>
     <button id="stopBtn">STOP</button>
 
+    <!-- Ορισμός SVG clipPaths για σχήματα Tetris -->
     <svg width="0" height="0">
-        <!-- Tetris Clip-Paths (Όλα τα μεγέθη πολλαπλάσια των 50px) -->
-        <clipPath id="I-shape"><rect width="200" height="50"/></clipPath>
-        <clipPath id="T-shape"><path d="M0,0 L150,0 L150,50 L100,50 L100,100 L50,100 L50,50 L0,50 Z"/></clipPath>
-        <clipPath id="L-shape"><path d="M0,0 L50,0 L50,150 L0,150 Z"/></clipPath>
-        <clipPath id="O-shape"><rect width="100" height="100"/></clipPath>
-        <clipPath id="line-shape"><rect width="300" height="50"/></clipPath>
+        <clipPath id="I-shape">
+            <rect width="200" height="50"/>
+        </clipPath>
+        <clipPath id="T-shape">
+            <path d="M0,0 L150,0 L150,50 L100,50 L100,100 L50,100 L50,50 L0,50 Z"/>
+        </clipPath>
+        <clipPath id="L-shape">
+            <path d="M0,0 L50,0 L50,150 L0,150 Z"/>
+        </clipPath>
+        <clipPath id="O-shape">
+            <rect width="100" height="100"/>
+        </clipPath>
+        <clipPath id="line-shape">
+            <rect width="300" height="50"/>
+        </clipPath>
     </svg>
 
     <script>
-        // Προκαθορισμένη διάταξη για 900x506px
+        // Διάταξη κομματιών για 900x506px
         const STATIC_LAYOUT = [
             // Γραμμή 1
             { type: 'I',    x: 0,   y: 0,   width: 200, height: 50  },
@@ -61,7 +71,7 @@
             { type: 'O',    x: 350, y: 250, width: 100, height: 100 },
             { type: 'I',    x: 450, y: 250, width: 200, height: 50  },
             
-            // Γραμμή 4 (τελευταία 6px προστέθηκαν για 506px συνολικό ύψος)
+            // Γραμμή 4
             { type: 'line', x: 0,   y: 456, width: 900, height: 50  }
         ];
 
@@ -75,7 +85,7 @@
                 const piece = document.createElement('div');
                 piece.className = 'tetris-piece';
                 
-                // Ορισμός σχήματος και θέσης
+                // Ορισμός εμφάνισης και τελικής θέσης
                 Object.assign(piece.style, {
                     width: `${config.width}px`,
                     height: `${config.height}px`,
@@ -90,47 +100,50 @@
             });
         }
 
-        async function animationCycle() {
-            while(animationActive) {
-                // Φάση 1: Προβολή εικόνας
-                await new Promise(r => setTimeout(r, 2000));
-                
-                // Φάση 2: Ακαριαία εξαφάνιση
-                pieces.forEach(piece => {
-                    piece.style.transition = 'none';
-                    piece.style.transform = `translateY(-100vh)`;
-                    piece.style.opacity = '0';
-                });
-                await new Promise(r => requestAnimationFrame(r));
-                
-                // Φάση 3: Εισαγωγή κομματιών
-                for(let i = pieces.length - 1; i >= 0; i--) {
-                    const piece = pieces[i];
-                    const startX = parseInt(piece.style.left) - 50 + Math.random() * 100;
-                    
-                    piece.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-                    piece.style.transform = `translate(${startX}px, 100vh)`;
-                    piece.style.opacity = '1';
-                    
+        function dropPieces() {
+            // 1) Κάνουμε όλα τα κομμάτια αρχικά "κρυφά" πιο πάνω από το container
+            pieces.forEach(piece => {
+                // Απενεργοποιούμε το transition για να το τοποθετήσουμε αρχικά
+                piece.style.transition = 'none';
+                // Βάζουμε το κομμάτι πολύ πιο πάνω (π.χ. -600px) ώστε να «πέφτει» μετά
+                piece.style.transform = `translateY(-600px)`;
+                piece.style.opacity = '0';
+            });
+
+            // Αφήνουμε ένα frame να περάσει (για να «γράψει» το αρχικό state)
+            requestAnimationFrame(() => {
+                // 2) Σε κάθε κομμάτι, μετά από μικρή καθυστέρηση, ενεργοποιούμε την πτώση
+                pieces.forEach((piece, index) => {
+                    // Μικρή τυχαία οριζόντια απόκλιση (προαιρετικά)
+                    const randomOffsetX = -50 + Math.random() * 100;
+
+                    // Επαναφέρουμε το transition
+                    piece.style.transition = 'transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s';
+
+                    // Μετά από κάποια καθυστέρηση (π.χ. 200ms * index), το «ρίχνουμε»
                     setTimeout(() => {
-                        piece.style.transform = `translate(0,0)`;
-                    }, 100);
-                    
-                    await new Promise(r => setTimeout(r, 50));
-                }
-                
-                // Φάση 4: Παύση
-                await new Promise(r => setTimeout(r, 2000));
-            }
+                        if (!animationActive) return; // Αν πατηθεί STOP ενδιάμεσα
+                        
+                        // Ορίζουμε το κομμάτι να εμφανιστεί και να μετακινηθεί
+                        piece.style.opacity = '1';
+                        // Από την τυχαία X απόκλιση και -600px, πηγαίνει στη σωστή του θέση (0,0)
+                        piece.style.transform = `translate(${randomOffsetX}px, 0)`;
+                    }, 200 * index);
+                });
+            });
         }
 
-        document.getElementById('stopBtn').addEventListener('click', () => {
+        function stopAnimation() {
             animationActive = false;
-        });
+            // Προαιρετικά, μπορείς να «παγώσεις» τα κομμάτια όπως είναι.
+            // Π.χ. pieces.forEach(piece => piece.style.transition = 'none');
+        }
+
+        document.getElementById('stopBtn').addEventListener('click', stopAnimation);
 
         window.onload = () => {
             initializePuzzle();
-            animationCycle();
+            dropPieces();
         };
     </script>
 </body>
