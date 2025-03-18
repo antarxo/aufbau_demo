@@ -2,26 +2,24 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Tetris Puzzle</title>
+  <title>Tetris Puzzle - Χωρισμός με Tetris σχήματα</title>
   <style>
     .container {
       width: 900px;
-      height: 506px; /* Στην πράξη χρησιμοποιούμε 500px για να ταιριάζουν τα κομμάτια */
+      height: 600px;
       position: relative;
       margin: 20px auto;
       overflow: hidden;
       border: 2px solid #333;
-      background-color: #f0f0f0;
+      background-image: url('PP.jpg');
+      background-size: 900px 600px;
     }
-
     .tetris-piece {
       position: absolute;
-      background-image: url('PP.jpg'); /* Προσαρμόστε το path εάν χρειάζεται */
-      background-size: 900px 506px;    /* Για να ταιριάζει με το container */
-      opacity: 0;                      /* Ξεκινάει αόρατο */
-      /* Το transition θα το ορίσουμε δυναμικά σε JS, ανάλογα με το κομμάτι */
+      background-image: url('PP.jpg');
+      background-size: 900px 600px;
+      opacity: 0;
     }
-
     button {
       display: block;
       margin: 10px auto;
@@ -31,107 +29,110 @@
   </style>
 </head>
 <body>
-
   <div class="container" id="puzzleContainer"></div>
   <button id="stopBtn">STOP</button>
 
+  <!-- Ορισμός SVG clipPaths για τα Tetris σχήματα -->
+  <svg width="0" height="0">
+    <!-- T-σχήμα 4×3: Το bounding box είναι 400×300 -->
+    <clipPath id="T-shape">
+      <polygon points="0,0 400,0 400,100 300,100 300,300 100,300 100,100 0,100"/>
+    </clipPath>
+    <!-- L-σχήμα 4×3: Το bounding box είναι 400×300 -->
+    <clipPath id="L-shape">
+      <polygon points="0,0 0,300 400,300 400,200 200,200 200,0"/>
+    </clipPath>
+    <!-- I-σχήμα 1×3 (100×300): Απλό ορθογώνιο -->
+    <clipPath id="I1-shape">
+      <rect width="100" height="300"/>
+    </clipPath>
+    <!-- Ορθογώνια για τα υπόλοιπα σχήματα -->
+    <clipPath id="I-shape-4x2">
+      <rect width="400" height="200"/>
+    </clipPath>
+    <clipPath id="I-shape-3x2">
+      <rect width="300" height="200"/>
+    </clipPath>
+    <clipPath id="I-shape-2x2">
+      <rect width="200" height="200"/>
+    </clipPath>
+    <clipPath id="I-shape-9x1">
+      <rect width="900" height="100"/>
+    </clipPath>
+  </svg>
+
   <script>
-    /*
-      Στατικό layout για 5 μεγάλες λωρίδες των 900x100, 
-      που καλύπτουν 900x500 (αγνοώντας τα τελευταία 6px ύψους).
-      Θα πέφτουν από κάτω προς τα πάνω:
-        - index 0 => y=400..500 (κάτω λωρίδα)
-        - index 1 => y=300..400
-        - ...
-        - index 4 => y=0..100 (κορυφή)
-    */
+    // Ορισμός του στατικού layout:
     const STATIC_LAYOUT = [
-      { x: 0, y: 400, width: 900, height: 100 },
-      { x: 0, y: 300, width: 900, height: 100 },
-      { x: 0, y: 200, width: 900, height: 100 },
-      { x: 0, y: 100, width: 900, height: 100 },
-      { x: 0, y:   0, width: 900, height: 100 }
+      // Πάνω σειρά (ύψος 300px)
+      { type: 'T-shape',   x: 0,   y: 0,   width: 400, height: 300 },  // Piece A: T-σχήμα
+      { type: 'L-shape',   x: 400, y: 0,   width: 400, height: 300 },  // Piece B: L-σχήμα
+      { type: 'I1-shape',  x: 800, y: 0,   width: 100, height: 300 },  // Piece C: I-σχήμα 1×3
+
+      // Κάτω πάνω μέρος (ύψος 200px, από y=300 έως y=500)
+      { type: 'I-shape-4x2', x: 0,   y: 300, width: 400, height: 200 },  // Piece D: I-σχήμα 4×2
+      { type: 'I-shape-3x2', x: 400, y: 300, width: 300, height: 200 },  // Piece E: I-σχήμα 3×2
+      { type: 'I-shape-2x2', x: 700, y: 300, width: 200, height: 200 },  // Piece F: I-σχήμα 2×2
+
+      // Κάτω κάτω μέρος (ύψος 100px, από y=500 έως y=600)
+      { type: 'I-shape-9x1', x: 0,   y: 500, width: 900, height: 100 }   // Piece G: Ορθογώνιο που καλύπτει το κάτω strip
     ];
 
     let animationActive = true;
     let pieces = [];
 
-    // 1) Φτιάχνουμε τα κομμάτια και τα βάζουμε στις σωστές συντεταγμένες (left/top).
+    // Δημιουργεί τα κομμάτια σύμφωνα με το layout
     function initializePuzzle() {
       const container = document.getElementById('puzzleContainer');
-
       STATIC_LAYOUT.forEach(config => {
         const piece = document.createElement('div');
         piece.className = 'tetris-piece';
-
-        // Στιλ για το κομμάτι: διαστάσεις + θέση + "φέτα" από την εικόνα
         Object.assign(piece.style, {
-          width:  config.width  + 'px',
+          width: config.width + 'px',
           height: config.height + 'px',
-          left:   config.x      + 'px',
-          top:    config.y      + 'px',
-          // Ρυθμίζουμε το backgroundPosition ώστε να δείχνει το σωστό κομμάτι της PP.jpg
+          left: config.x + 'px',
+          top: config.y + 'px',
+          clipPath: `url(#${config.type})`,
           backgroundPosition: `-${config.x}px -${config.y}px`
         });
-
         container.appendChild(piece);
         pieces.push(piece);
       });
     }
 
-    // 2) Λογική «πτώσης» των κομματιών. Ξεκινάμε από το χαμηλότερο (index=0) προς το υψηλότερο.
+    // Η λειτουργία πτώσης: ξεκινάει από τα πιο χαμηλά κομμάτια (με μεγαλύτερο y) και ανεβάζεται προς τα πάνω.
     function dropPieces() {
-      // Αρχικά τοποθετούμε όλα τα κομμάτια πολύ ψηλά (off-screen), ώστε να «πέφτουν» μετά
+      // Τοποθετούμε αρχικά κάθε κομμάτι εκτός οθόνης (με μετατόπιση προς τα κάτω)
       pieces.forEach(piece => {
-        piece.style.transform = 'translateY(-600px)'; // εκτός οθόνης
-        piece.style.opacity   = '0';
-        // Απενεργοποιούμε το transition αρχικά, για να μην κινούνται ακόμα
         piece.style.transition = 'none';
+        piece.style.transform = 'translateY(600px)'; // ξεκινά από κάτω
+        piece.style.opacity = '0';
       });
 
-      // Αφήνουμε ένα frame να περάσει για να «γράψει» το αρχικό state
       requestAnimationFrame(() => {
-
-        // Ρίχνουμε τα κομμάτια **από κάτω προς τα πάνω** (index 0 -> 1 -> 2 κ.λπ.)
-        pieces.forEach((piece, index) => {
-          // Θέλουμε το χαμηλότερο (index=0) να πέφτει με μεγαλύτερη διάρκεια,
-          // και το υψηλότερο (index=4) με μικρότερη.
-          // Π.χ. duration = 3.5 - 0.5*index (3.5s, 3s, 2.5s, 2s, 1.5s)
-          const duration = 3.5 - index * 0.5;
-
-          // Χρόνος αναμονής (delay) πριν καν ξεκινήσει η πτώση
-          // ώστε να πέφτουν διαδοχικά και όχι όλα μαζί.
-          // Π.χ. 1.5s * index
-          const delay = 1500 * index;
-
-          // Ενεργοποιούμε το transition για κάθε κομμάτι ξεχωριστά
-          piece.style.transition = `transform ${duration}s ease, opacity 1s`;
-
-          // Προγραμματίζουμε το "πέσιμο" μετά το delay
+        // Ταξινομούμε τα κομμάτια κατά φθίνουσα σειρά y (τα πιο χαμηλά πέφτουν πρώτα)
+        const sortedPieces = pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top));
+        sortedPieces.forEach((piece, index) => {
+          // Ορίζουμε delay και διάρκεια ώστε τα πιο κάτω να κινούνται πιο αργά
+          const delay = index * 300; // 300ms ανά κομμάτι
+          const duration = 2 + index * 0.3; // μεγαλύτερος χρόνος πτώσης για τα πιο χαμηλά
           setTimeout(() => {
-            if (!animationActive) return; // Αν πατήθηκε STOP, μην συνεχίσεις
-
-            piece.style.opacity   = '1';
-            piece.style.transform = 'translateY(0)'; 
-            // Από το -600px στο 0, δηλαδή στην τελική του θέση.
+            if (!animationActive) return;
+            piece.style.transition = `transform ${duration}s ease, opacity ${duration}s ease`;
+            piece.style.opacity = '1';
+            piece.style.transform = 'translateY(0)';
           }, delay);
         });
       });
     }
 
-    // 3) Πατάμε STOP για να σταματήσουμε την πτώση των επόμενων κομματιών
     function stopAnimation() {
       animationActive = false;
-      // (Προαιρετικά, αν θέλεις να "παγώσεις" κιόλας τα ήδη κινούμενα κομμάτια:
-      // pieces.forEach(p => p.style.transition = 'none');
-      // )
     }
 
-    // 4) Δέσμες ενεργειών στο φόρτωμα
     window.onload = () => {
       initializePuzzle();
       dropPieces();
-
       document.getElementById('stopBtn').addEventListener('click', stopAnimation);
     };
   </script>
