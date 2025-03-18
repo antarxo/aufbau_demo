@@ -24,6 +24,10 @@
             );
         }
 
+        .puzzle-piece.solved {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+
         button {
             display: block;
             margin: 10px auto;
@@ -48,33 +52,35 @@
                     const piece = document.createElement('div');
                     piece.className = 'puzzle-piece';
                     
-                    // Background positioning
+                    // Θέση εικόνας
                     piece.style.backgroundPosition = 
                         `-${col * 50}px -${row * 50}px`;
                     
-                    // Original position data
-                    piece.dataset.origX = col * 50;
-                    piece.dataset.origY = row * 50;
+                    // Αρχική τυχαία θέση
+                    piece.style.transform = 
+                        `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
                     
                     container.appendChild(piece);
                 }
             }
-            scramblePuzzle();
+        }
+
+        function solvePuzzle() {
+            const pieces = document.querySelectorAll('.puzzle-piece');
+            pieces.forEach((piece, index) => {
+                const row = Math.floor(index / COLS);
+                const col = index % COLS;
+                piece.style.transform = `translate(${col * 50}px, ${row * 50}px)`;
+                piece.classList.add('solved');
+            });
         }
 
         function scramblePuzzle() {
             const pieces = document.querySelectorAll('.puzzle-piece');
             pieces.forEach(piece => {
-                const x = Math.random() * 600;
-                const y = Math.random() * 400;
-                piece.style.transform = `translate(${x}px, ${y}px)`;
-            });
-        }
-
-        function solvePuzzle() {
-            const pieces = document.querySelectorAll('.puzzle-piece');
-            pieces.forEach(piece => {
-                piece.style.transform = `translate(0,0)`;
+                piece.style.transform = 
+                    `translate(${Math.random() * 700}px, ${Math.random() * 500}px)`;
+                piece.classList.remove('solved');
             });
         }
 
@@ -93,7 +99,7 @@
             animationActive = false;
         });
 
-        // Initialize
+        // Αρχικοποίηση
         window.onload = () => {
             createPuzzle();
             animationLoop();
