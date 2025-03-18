@@ -9,13 +9,16 @@
             margin: 20px auto;
             overflow: hidden;
             border: 2px solid #333;
+            background: #f0f0f0;
         }
 
-        .tetris-piece {
+        .puzzle-piece {
+            width: 50px;
+            height: 50.6px;
             position: absolute;
             background-image: url('PP.jpg');
             background-size: 900px 506px;
-            transition: all 1s ease-in-out;
+            clip-path: url(#jigsawPattern);
         }
 
         button {
@@ -31,85 +34,80 @@
     <button id="stopBtn">STOP</button>
 
     <svg width="0" height="0">
-        <!-- Tetris Clip-Paths -->
-        <clipPath id="I-shape">
-            <rect x="0" y="0" width="100" height="25"/>
-        </clipPath>
-        <clipPath id="L-shape">
-            <path d="M0,0 L75,0 L75,50 L25,50 L25,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="T-shape">
-            <path d="M0,0 L100,0 L100,25 L75,25 L75,50 L25,50 L25,25 L0,25 Z"/>
-        </clipPath>
-        <clipPath id="O-shape">
-            <rect x="0" y="0" width="50" height="50"/>
+        <clipPath id="jigsawPattern">
+            <path d="M0,20 Q0,0 20,0 L30,0 Q50,10 70,0 L80,0 Q100,0 100,20 
+                     L100,30 Q90,50 100,70 L100,80 Q100,100 80,100 
+                     L70,100 Q50,90 30,100 L20,100 Q0,100 0,80 
+                     L0,70 Q10,50 0,30 Z"/>
         </clipPath>
     </svg>
 
     <script>
-        const GRID_SIZE = 50; // Βασικό μέγεθος κομματιού
-        const COLS = 900 / GRID_SIZE; // 18 columns
-        const ROWS = 506 / GRID_SIZE; // 10 rows
-        const TETRIS_SHAPES = ['I', 'L', 'T', 'O'];
+        const COLS = 18;
+        const ROWS = 10;
+        const PIECE_WIDTH = 50;
+        const PIECE_HEIGHT = 50.6;
         let animationActive = true;
-        let timeoutId;
+        let animations = [];
 
         function createPuzzle() {
             const container = document.getElementById('puzzleContainer');
             container.innerHTML = '';
 
-            // Δημιουργία τυχαίων Tetris κομματιών
             for(let row = 0; row < ROWS; row++) {
                 for(let col = 0; col < COLS; col++) {
-                    const shape = TETRIS_SHAPES[Math.floor(Math.random() * TETRIS_SHAPES.length)];
                     const piece = document.createElement('div');
-                    piece.className = 'tetris-piece';
+                    piece.className = 'puzzle-piece';
+                    piece.style.backgroundPosition = `-${col * PIECE_WIDTH}px -${row * PIECE_HEIGHT}px`;
                     
-                    // Ορισμός θέσης και σχήματος
-                    piece.style.width = `${GRID_SIZE * 2}px`;
-                    piece.style.height = `${GRID_SIZE}px`;
-                    piece.style.clipPath = `url(#${shape}-shape)`;
-                    piece.style.backgroundPosition = `-${col * GRID_SIZE}px -${row * GRID_SIZE}px`;
-                    piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
+                    // Αρχική θέση έξω από τον container
+                    const startX = Math.random() * 900 - 100;
+                    const startY = -100 - Math.random() * 100;
+                    piece.style.transform = `translate(${startX}px, ${startY}px)`;
                     
                     container.appendChild(piece);
+                    animatePiece(piece, col, row);
                 }
             }
         }
 
-        function solvePuzzle() {
-            document.querySelectorAll('.tetris-piece').forEach((piece, index) => {
-                const col = index % COLS;
-                const row = Math.floor(index / COLS);
-                piece.style.transform = `translate(${col * GRID_SIZE}px, ${row * GRID_SIZE}px)`;
-            });
-        }
+        function animatePiece(piece, targetCol, targetRow) {
+            if(!animationActive) return;
 
-        function scramblePuzzle() {
-            document.querySelectorAll('.tetris-piece').forEach(piece => {
-                piece.style.transform = `translate(${Math.random()*800}px, ${Math.random()*400}px)`;
-            });
-        }
-
-        function animatePuzzle() {
-            if (!animationActive) return;
+            const targetX = targetCol * PIECE_WIDTH;
+            const targetY = targetRow * PIECE_HEIGHT;
             
-            solvePuzzle();
-            timeoutId = setTimeout(() => {
-                scramblePuzzle();
-                timeoutId = setTimeout(animatePuzzle, 2000);
-            }, 2000);
+            // Δημιουργία καμπύλης διαδρομής (Bezier curve)
+            const path = [
+                { transform: piece.style.transform }, 
+                { 
+                    transform: `translate(${targetX}px, ${targetY}px)`,
+                    offset: 0.7,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                },
+                { transform: `translate(${targetX}px, ${targetY}px) rotate(0deg)` }
+            ];
+
+            const animation = piece.animate(path, {
+                duration: 2000 + Math.random() * 1000,
+                delay: Math.random() * 1000,
+                iterations: Infinity
+            });
+
+            animations.push(animation);
+        }
+
+        function stopAnimations() {
+            animations.forEach(anim => anim.cancel());
+            animations = [];
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             animationActive = false;
-            clearTimeout(timeoutId);
+            stopAnimations();
         });
 
-        window.onload = () => {
-            createPuzzle();
-            animatePuzzle();
-        };
+        window.onload = createPuzzle;
     </script>
 </body>
 </html>
