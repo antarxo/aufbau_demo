@@ -1,124 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Αυτοκατάλυση KMnO₄ - Πλήρης Προσομοίωση</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocatalysis Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .controls { margin: 20px 0; }
-        input { width: 200px; }
-        .info { color: #666; font-size: 0.9em; }
-    </style>
 </head>
 <body>
-    <h2>Αυτοκατάλυση KMnO₄ vs H₂C₂O₄ - Όλες οι Περιπτώσεις</h2>
-    <div class="info">Σύρετε τα sliders για να αλλάξετε παραμέτρους. Η πράσινη γραμμή δείχνει κοινή συμπεριφορά μετά το κρίσιμο σημείο.</div>
-    
-    <div class="controls">
-        <label>C₀ (Mn²⁺ αρχικό): </label>
-        <input type="range" id="c0" min="0" max="0.5" step="0.01" value="0" oninput="updateChart()">
-        <span id="c0Value">0</span><br>
-        <label>A₀ (MnO₄⁻ αρχικό): </label>
-        <input type="range" id="a0" min="0.5" max="2" step="0.1" value="1" oninput="updateChart()">
-        <span id="a0Value">1</span><br>
-        <label>k (σταθερά ταχύτητας): </label>
-        <input type="range" id="k" min="0.1" max="2" step="0.1" value="0.5" oninput="updateChart()">
-        <span id="kValue">0.5</span>
-    </div>
-
-    <canvas id="myChart"></canvas>
-
+    <h2>Autocatalysis of KMnO4 by Mn<sup>2+</sup></h2>
+    <canvas id="autocatalysisChart" width="600" height="400"></canvas>
     <script>
-        let chart;
-        const ctx = document.getElementById('myChart').getContext('2d');
-        const criticalConcentration = 0.2; // Υποθετική κρίσιμη συγκέντρωση
-
-        // Συναρτήσεις
-        function autocatalytic(t, A0, C0, k) {
-            const exponent = -k * (C0 + A0) * t;
-            return (A0 * (C0 + A0) * Math.exp(exponent)) / (C0 + A0 * Math.exp(exponent));
-        }
-
-        function noAutocatalysis(t, A0, k) {
-            return A0 * Math.exp(-k * t);
-        }
-
-        function findTCrit(A0, k) {
-            let t = 0, step = 0.1, currentC = 0;
-            while (currentC < criticalConcentration && t < 100) {
-                currentC = autocatalytic(t, A0, 0.0001, k);
-                t += step;
-            }
-            return t;
-        }
-
-        function updateChart() {
-            const C0 = parseFloat(document.getElementById('c0').value);
-            const A0 = parseFloat(document.getElementById('a0').value);
-            const k = parseFloat(document.getElementById('k').value);
-            document.getElementById('c0Value').textContent = C0;
-            document.getElementById('a0Value').textContent = A0;
-            document.getElementById('kValue').textContent = k;
-
-            const time = Array.from({ length: 100 }, (_, i) => i);
-            const tCrit = findTCrit(A0, k);
-
-            // Όλες οι καμπύλες
-            const datasets = [
-                { // 1. Αυτοκατάλυση χωρίς αρχικό Mn²⁺ (Μωβ + Πράσινο)
-                    label: 'Αυτοκατάλυση (C₀ = 0)',
-                    data: time.map(t => t <= tCrit ? autocatalytic(t, A0, 0.0001, k) : null),
-                    borderColor: 'purple',
-                    tension: 0.4,
-                    spanGaps: true
-                },
-                { // 2. Συνέχεια αυτοκατάλυσης μετά το κρίσιμο σημείο (Πράσινο)
-                    label: 'Αυτοκατάλυση μετά κρίσιμο σημείο',
-                    data: time.map(t => t >= tCrit ? autocatalytic(t, A0, criticalConcentration, k) : null),
-                    borderColor: 'green',
-                    tension: 0.4,
-                    spanGaps: true
-                },
-                { // 3. Κατάλυση με C₀ > 0 (Μπλε)
-                    label: 'Με αρχικό Mn²⁺ (C₀ > 0)',
-                    data: time.map(t => autocatalytic(t, A0, C0, k)),
-                    borderColor: 'blue',
-                    tension: 0.4
-                },
-                { // 4. Χωρίς αυτοκατάλυση (Γκρι)
-                    label: 'Χωρίς αυτοκατάλυση',
-                    data: time.map(t => noAutocatalysis(t, A0, k)),
-                    borderColor: 'gray',
-                    tension: 0.4
-                },
-                { // 5. Κρίσιμη συγκέντρωση (Πράσινη διακεκομμένη)
-                    label: `C₀ = ${criticalConcentration} (Κρίσιμη)`,
-                    data: time.map(t => autocatalytic(t, A0, criticalConcentration, k)),
-                    borderColor: 'green',
-                    borderDash: [5,5],
-                    tension: 0.4
-                }
-            ];
-
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: time, datasets: datasets },
-                options: {
-                    scales: { y: { title: { display: true, text: '[MnO₄⁻]' } },
-                             x: { title: { display: true, text: 'Χρόνος (t)' } },
-                    plugins: { 
-                        legend: { 
-                            labels: { 
-                                filter: item => !item.text.includes('μετά') // Απόκρυψη redundant λεζάντας
-                            } 
-                        } 
+        const ctx = document.getElementById('autocatalysisChart').getContext('2d');
+        const autocatalysisChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Time points
+                datasets: [{
+                    label: 'Concentration of KMnO4',
+                    data: [1, 0.85, 0.7, 0.55, 0.4, 0.3, 0.2, 0.15, 0.1, 0.05, 0],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (minutes)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Concentration (M)'
+                        },
+                        beginAtZero: true
                     }
                 }
-            });
-        }
-
-        updateChart();
+            }
+        });
     </script>
 </body>
 </html>
