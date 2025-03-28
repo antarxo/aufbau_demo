@@ -1,84 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autocatalysis Simulation</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Αυτοκατάλυση vs Κατάλυση</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <h2>Autocatalysis of KMnO4 by Mn<sup>2+</sup></h2>
-    <canvas id="autocatalysisChart" width="600" height="400"></canvas>
+    <div id="plot"></div>
+    
+    <div style="padding: 20px;">
+        <label>A₀: <input type="number" id="A0" value="5" step="0.1"> M</label>
+        <label>Αυτοκατάλυση C₀: <input type="number" id="C0" value="0" step="0.1"> M</label>
+        <label>Κατάλυση Mn²⁺: <input type="number" id="Cat" value="5" step="0.1"> M</label>
+        <label>k: <input type="number" id="k" value="0.3" step="0.01"> M⁻¹s⁻¹</label>
+        <button onclick="updatePlot()">Ενημέρωση</button>
+    </div>
+
     <script>
-        // Initial concentrations
-        let KMnO4 = 1; // initial concentration of KMnO4 in M
-        let Mn2 = 0.1; // initial concentration of Mn2+ in M
-        const k = 0.1; // rate constant
-
-        // Time parameters
-        const dt = 0.1; // time step in minutes
-        const totalTime = 10; // total time in minutes
-        const timePoints = [];
-
-        // Concentrations arrays
-        const KMnO4Concentrations = [];
-        const Mn2Concentrations = [];
-
-        // Simulation loop
-        for (let t = 0; t <= totalTime; t += dt) {
-            timePoints.push(t.toFixed(2));
-            KMnO4Concentrations.push(KMnO4.toFixed(4));
-            Mn2Concentrations.push(Mn2.toFixed(4));
-
-            // Euler method for differential equations
-            const dKMnO4 = -k * KMnO4 * Mn2 * dt;
-            const dMn2 = -dKMnO4; // stoichiometry of the reaction
-
-            KMnO4 += dKMnO4;
-            Mn2 += dMn2;
+        function simulate(A0, B0, k) {
+            const dt = 0.1;
+            let A = A0, B = B0;
+            const t = [], conc = [], rate = [];
+            
+            while(A > 0.05*A0) { // Διακοπή όταν απομείνει <5%
+                const currentRate = k * A * B;
+                A -= currentRate * dt;
+                if(B < A0) B += currentRate * dt; // Μόνο για αυτοκατάλυση
+                
+                t.push(t.length*dt);
+                conc.push(A);
+                rate.push(currentRate);
+            }
+            return {t, conc, rate, completionTime: t[t.length-1]};
         }
 
-        // Create the chart
-        const ctx = document.getElementById('autocatalysisChart').getContext('2d');
-        const autocatalysisChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: timePoints,
-                datasets: [
-                    {
-                        label: 'Concentration of KMnO4',
-                        data: KMnO4Concentrations,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 2,
-                        fill: false
-                    },
-                    {
-                        label: 'Concentration of Mn<sup>2+</sup>',
-                        data: Mn2Concentrations,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 2,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time (minutes)'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Concentration (M)'
-                        },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+        function updatePlot() {
+            const A0 = parseFloat(document.getElementById('A0').value);
+            const C0 = parseFloat(document.getElementById('C0').value);
+            const Cat = parseFloat(document.getElementById('Cat').value);
+            const k = parseFloat(document.getElementById('k').value);
+            
+            // Περιπτώσεις
+            const case1 = simulate(A0, 1e-7, k);  // Αυτοκατάλυση (C₀≈0)
+            const case2 = simulate(A0, C0, k);     // Αυτοκατάλυση με C₀
+            const case3 = simulate(A0, Cat, k);    // Μεγάλη Κατάλυση
+            const case4 = simulate(A0, 0, k);      // Χωρίς κατάλυση (μόνο αν k>0)
+            
+            // Καμπύλες συγκεντρώσεων
+            const traces = [
+                {x: case1.t, y: case1.conc, name: `Αυτοκατάλυση (C₀=1e-7) [${case1.completionTime.toFixed(1)}s]`, line: {color: 'blue'}},
+                {x: case2.t, y: case2.conc, name: `Αυτοκατάλυση (C₀=${C0}) [${case2.completionTime.toFixed(1)}s]`, line: {color: 'green'}},
+                {x: case3.t, y: case3.conc, name: `Μεγάλη Κατάλυση [${case3.completionTime.toFixed(1)}s]`, line: {color: 'red', dash: 'dot'}},
+                {x: case4.t, y: case4.conc, name: `Χωρίς Κατάλυση [${case4.completionTime.toFixed(1)}s]`, line: {color: 'gray'}}
+            ];
+
+            // Οριζόντιες γραμμές ολοκλήρωσης
+            const shapes = [case1, case2, case3, case4].map((c, i) => ({
+                type: 'line',
+                x0: c.completionTime,
+                x1: c.completionTime,
+                y0: 0,
+                y1: A0,
+                line: {color: traces[i].line.color, width: 1, dash: 'dot'}
+            }));
+
+            const layout = {
+                title: 'Συγκριτική Πρόοδος Αντίδρασης',
+                xaxis: {title: 'Χρόνος (s)', range: [0, Math.max(...[case1, case2, case3, case4].map(c => c.completionTime))]},
+                yaxis: {title: '[MnO₄⁻] (M)', range: [0, A0]},
+                shapes: shapes,
+                showlegend: true
+            };
+
+            Plotly.react('plot', traces, layout);
+        }
+        updatePlot();
     </script>
+
+    <div style="padding: 20px; color: #666;">
+        <h3>Ερμηνεία:</h3>
+        <ul>
+            <li><strong>Μπλε Καμπύλη:</strong> Τυπική αυτοκατάλυση με ελάχιστη αρχική ακαθαρσία (1e-7 M Mn²⁺)</li>
+            <li><strong>Πράσινη Καμπύλη:</strong> Αυτοκατάλυση με προσθετό Mn²⁺ στην αρχή</li>
+            <li><strong>Κόκκινη Διακεκομμένη:</strong> Μεγάλη ποσότητα Mn²⁺ (5 M) από την αρχή</li>
+            <li><strong>Γκρι Καμπύλη:</strong> Χωρίς καθόλου καταλύτη (μόνο αν k > 0)</li>
+            <li>Οι κάθετες γραμμές δείχνουν τον χρόνο που απομένει <5% MnO₄⁻</li>
+        </ul>
+
+        <h3>Παρατηρήσεις:</h3>
+        <table>
+            <tr>
+                <th>Περίπτωση</th>
+                <th>Χρόνος Ολοκλήρωσης</th>
+                <th>Μορφή Καμπύλης</th>
+            </tr>
+            <tr>
+                <td>Αυτοκατάλυση (C₀=1e-7)</td>
+                <td>~60-120 s</td>
+                <td>Σιγμοειδής με καθυστέρηση</td>
+            </tr>
+            <tr>
+                <td>Αυτοκατάλυση (C₀=0.5)</td>
+                <td>~20-40 s</td>
+                <td>Επιταχυνόμενη από την αρχή</td>
+            </tr>
+            <tr>
+                <td>Μεγάλη Κατάλυση (5 M Mn²⁺)</td>
+                <td>~5-10 s</td>
+                <td>Απότομη εκθετική πτώση</td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>
