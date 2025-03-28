@@ -1,135 +1,124 @@
 <!DOCTYPE html>
-<html lang="el">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Tetris Puzzle - 8 σειρές, 64 κομμάτια</title>
-  <style>
-    .container {
-      width: 900px;
-      height: 600px;
-      position: relative;
-      margin: 20px auto;
-      overflow: hidden;
-      border: 2px solid #333;
-      background-image: url('PP.jpg'); /* Αρχικά εμφανίζεται η πλήρης εικόνα */
-      background-size: 900px 600px;
-      transition: background-image 0.5s;
-    }
-    .tetris-piece {
-      position: absolute;
-      background-image: url('PP.jpg');
-      background-size: 900px 600px;
-      opacity: 0;
-      border: 1px solid #fff; /* Περιγράμματα για διαχωρισμό */
-      box-sizing: border-box;
-    }
-    button {
-      display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-  </style>
+    <title>Αυτοκατάλυση KMnO₄ - Πλήρης Προσομοίωση</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .controls { margin: 20px 0; }
+        input { width: 200px; }
+        .info { color: #666; font-size: 0.9em; }
+    </style>
 </head>
 <body>
-  <div class="container" id="puzzleContainer"></div>
-  <button id="stopBtn">STOP</button>
+    <h2>Αυτοκατάλυση KMnO₄ vs H₂C₂O₄ - Όλες οι Περιπτώσεις</h2>
+    <div class="info">Σύρετε τα sliders για να αλλάξετε παραμέτρους. Η πράσινη γραμμή δείχνει κοινή συμπεριφορά μετά το κρίσιμο σημείο.</div>
+    
+    <div class="controls">
+        <label>C₀ (Mn²⁺ αρχικό): </label>
+        <input type="range" id="c0" min="0" max="0.5" step="0.01" value="0" oninput="updateChart()">
+        <span id="c0Value">0</span><br>
+        <label>A₀ (MnO₄⁻ αρχικό): </label>
+        <input type="range" id="a0" min="0.5" max="2" step="0.1" value="1" oninput="updateChart()">
+        <span id="a0Value">1</span><br>
+        <label>k (σταθερά ταχύτητας): </label>
+        <input type="range" id="k" min="0.1" max="2" step="0.1" value="0.5" oninput="updateChart()">
+        <span id="kValue">0.5</span>
+    </div>
 
-  <!-- 🎯 Ορισμός clipPaths -->
-  <svg width="0" height="0">
-    <clipPath id="T-shape">
-      <polygon points="0,0 100,0 100,25 75,25 75,75 25,75 25,25 0,25"/>
-    </clipPath>
-    <clipPath id="L-shape">
-      <polygon points="0,0 0,75 100,75 100,50 50,50 50,0"/>
-    </clipPath>
-    <clipPath id="I-shape">
-      <rect width="100" height="75"/>
-    </clipPath>
-    <clipPath id="Rect-shape">
-      <rect width="50" height="75"/>
-    </clipPath>
-  </svg>
+    <canvas id="myChart"></canvas>
 
-  <script>
-    /*
-      🔹 Στατικός πίνακας που καλύπτει ΑΚΡΙΒΩΣ τα 900x600 (χωρίς κενά).
-      🔹 8 σειρές x 8 κομμάτια ανά σειρά = 64 κομμάτια.
-    */
-    const STATIC_LAYOUT = [];
-    const ROWS = 8;
-    const COLUMNS = 8;
-    const PIECE_WIDTHS = [50, 100, 150]; // ΜΟΝΟ σταθερά πλάτη για να καλυφθεί πλήρως η εικόνα
-    const SHAPES = ["T-shape", "L-shape", "I-shape", "Rect-shape"];
-    const ROTATIONS = [0, 90, 180, 270];
+    <script>
+        let chart;
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const criticalConcentration = 0.2; // Υποθετική κρίσιμη συγκέντρωση
 
-    for (let row = 0; row < ROWS; row++) {
-      let x = 0;
-      let y = row * 75;
+        // Συναρτήσεις
+        function autocatalytic(t, A0, C0, k) {
+            const exponent = -k * (C0 + A0) * t;
+            return (A0 * (C0 + A0) * Math.exp(exponent)) / (C0 + A0 * Math.exp(exponent));
+        }
 
-      while (x < 900) {
-        let width = PIECE_WIDTHS[Math.floor(Math.random() * PIECE_WIDTHS.length)];
-        if (x + width > 900) width = 900 - x; // Προσαρμογή τελευταίου κομματιού της σειράς
+        function noAutocatalysis(t, A0, k) {
+            return A0 * Math.exp(-k * t);
+        }
 
-        const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-        const rotation = ROTATIONS[Math.floor(Math.random() * ROTATIONS.length)];
+        function findTCrit(A0, k) {
+            let t = 0, step = 0.1, currentC = 0;
+            while (currentC < criticalConcentration && t < 100) {
+                currentC = autocatalytic(t, A0, 0.0001, k);
+                t += step;
+            }
+            return t;
+        }
 
-        STATIC_LAYOUT.push({ x, y, width, height: 75, shape, rotation });
-        x += width;
-      }
-    }
+        function updateChart() {
+            const C0 = parseFloat(document.getElementById('c0').value);
+            const A0 = parseFloat(document.getElementById('a0').value);
+            const k = parseFloat(document.getElementById('k').value);
+            document.getElementById('c0Value').textContent = C0;
+            document.getElementById('a0Value').textContent = A0;
+            document.getElementById('kValue').textContent = k;
 
-    let animationActive = true;
-    let pieces = [];
+            const time = Array.from({ length: 100 }, (_, i) => i);
+            const tCrit = findTCrit(A0, k);
 
-    function initializePuzzle() {
-      const container = document.getElementById('puzzleContainer');
-      STATIC_LAYOUT.forEach(config => {
-        const piece = document.createElement('div');
-        piece.className = 'tetris-piece';
-        Object.assign(piece.style, {
-          width: `${config.width}px`,
-          height: `${config.height}px`,
-          left: `${config.x}px`,
-          top: `${config.y}px`,
-          clipPath: `url(#${config.shape})`,
-          backgroundPosition: `-${config.x}px -${config.y}px`
-        });
+            // Όλες οι καμπύλες
+            const datasets = [
+                { // 1. Αυτοκατάλυση χωρίς αρχικό Mn²⁺ (Μωβ + Πράσινο)
+                    label: 'Αυτοκατάλυση (C₀ = 0)',
+                    data: time.map(t => t <= tCrit ? autocatalytic(t, A0, 0.0001, k) : null),
+                    borderColor: 'purple',
+                    tension: 0.4,
+                    spanGaps: true
+                },
+                { // 2. Συνέχεια αυτοκατάλυσης μετά το κρίσιμο σημείο (Πράσινο)
+                    label: 'Αυτοκατάλυση μετά κρίσιμο σημείο',
+                    data: time.map(t => t >= tCrit ? autocatalytic(t, A0, criticalConcentration, k) : null),
+                    borderColor: 'green',
+                    tension: 0.4,
+                    spanGaps: true
+                },
+                { // 3. Κατάλυση με C₀ > 0 (Μπλε)
+                    label: 'Με αρχικό Mn²⁺ (C₀ > 0)',
+                    data: time.map(t => autocatalytic(t, A0, C0, k)),
+                    borderColor: 'blue',
+                    tension: 0.4
+                },
+                { // 4. Χωρίς αυτοκατάλυση (Γκρι)
+                    label: 'Χωρίς αυτοκατάλυση',
+                    data: time.map(t => noAutocatalysis(t, A0, k)),
+                    borderColor: 'gray',
+                    tension: 0.4
+                },
+                { // 5. Κρίσιμη συγκέντρωση (Πράσινη διακεκομμένη)
+                    label: `C₀ = ${criticalConcentration} (Κρίσιμη)`,
+                    data: time.map(t => autocatalytic(t, A0, criticalConcentration, k)),
+                    borderColor: 'green',
+                    borderDash: [5,5],
+                    tension: 0.4
+                }
+            ];
 
-        // Αρχική θέση (τα κομμάτια εκτός οθόνης με περιστροφή)
-        piece.style.transform = `translateY(-600px) rotate(${config.rotation}deg)`;
-        container.appendChild(piece);
-        pieces.push(piece);
-      });
-    }
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: time, datasets: datasets },
+                options: {
+                    scales: { y: { title: { display: true, text: '[MnO₄⁻]' } },
+                             x: { title: { display: true, text: 'Χρόνος (t)' } },
+                    plugins: { 
+                        legend: { 
+                            labels: { 
+                                filter: item => !item.text.includes('μετά') // Απόκρυψη redundant λεζάντας
+                            } 
+                        } 
+                    }
+                }
+            });
+        }
 
-    function dropPieces() {
-      const container = document.getElementById('puzzleContainer');
-      container.style.backgroundImage = 'none'; // Εξαφάνιση πλήρους εικόνας
-
-      requestAnimationFrame(() => {
-        pieces.slice().sort((a, b) => parseInt(b.style.top) - parseInt(a.style.top)).forEach((piece, index) => {
-          const delay = index * 50;  // Ταχύτερη ακολουθιακή πτώση
-          const duration = 1.5 + index * 0.02;
-          setTimeout(() => {
-            if (!animationActive) return;
-            piece.style.transition = `transform ${duration}s ease, opacity ${duration}s ease`;
-            piece.style.opacity = '1';
-            piece.style.transform = 'translateY(0) rotate(0deg)'; // Τελική θέση και περιστροφή
-          }, delay);
-        });
-      });
-    }
-
-    function stopAnimation() {
-      animationActive = false;
-    }
-
-    window.onload = () => {
-      initializePuzzle();
-      dropPieces();
-      document.getElementById('stopBtn').addEventListener('click', stopAnimation);
-    };
-  </script>
+        updateChart();
+    </script>
 </body>
 </html>
