@@ -10,18 +10,56 @@
     <h2>Autocatalysis of KMnO4 by Mn<sup>2+</sup></h2>
     <canvas id="autocatalysisChart" width="600" height="400"></canvas>
     <script>
+        // Initial concentrations
+        let KMnO4 = 1; // initial concentration of KMnO4 in M
+        let Mn2 = 0.1; // initial concentration of Mn2+ in M
+        const k = 0.1; // rate constant
+
+        // Time parameters
+        const dt = 0.1; // time step in minutes
+        const totalTime = 10; // total time in minutes
+        const timePoints = [];
+
+        // Concentrations arrays
+        const KMnO4Concentrations = [];
+        const Mn2Concentrations = [];
+
+        // Simulation loop
+        for (let t = 0; t <= totalTime; t += dt) {
+            timePoints.push(t.toFixed(2));
+            KMnO4Concentrations.push(KMnO4.toFixed(4));
+            Mn2Concentrations.push(Mn2.toFixed(4));
+
+            // Euler method for differential equations
+            const dKMnO4 = -k * KMnO4 * Mn2 * dt;
+            const dMn2 = -dKMnO4; // stoichiometry of the reaction
+
+            KMnO4 += dKMnO4;
+            Mn2 += dMn2;
+        }
+
+        // Create the chart
         const ctx = document.getElementById('autocatalysisChart').getContext('2d');
         const autocatalysisChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Time points
-                datasets: [{
-                    label: 'Concentration of KMnO4',
-                    data: [1, 0.85, 0.7, 0.55, 0.4, 0.3, 0.2, 0.15, 0.1, 0.05, 0],
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 2,
-                    fill: false
-                }]
+                labels: timePoints,
+                datasets: [
+                    {
+                        label: 'Concentration of KMnO4',
+                        data: KMnO4Concentrations,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    },
+                    {
+                        label: 'Concentration of Mn<sup>2+</sup>',
+                        data: Mn2Concentrations,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }
+                ]
             },
             options: {
                 scales: {
