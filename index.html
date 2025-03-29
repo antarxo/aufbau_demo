@@ -117,38 +117,35 @@ class Beaker {
         let ellipseW = baseWidth + 30;
         let ellipseH = ellipseW * (0.82 / 3.23);
         let centerX = this.width / 2;
-        // Ορίζουμε τα κέντρα των ελλείψεων ώστε να έχουν ως οριζόντια διάμετρο τα κέντρα τους:
-        let topEllipseCenterY = ellipseH / 2;                   // πάνω έλλειψη
-        let bottomEllipseCenterY = this.height - ellipseH / 2;    // κάτω έλλειψη
-
-        // Ορίζουμε το ορθογώνιο του περιεχομένου με:
-        // - Πάνω όριο: το κέντρο της πάνω έλλειψης (horizontal diameter)
-        // - Κάτω όριο: το κέντρο της κάτω έλλειψης (horizontal diameter)
-        // - Πλάτος: το ellipseW
-        let rectX = centerX - ellipseW / 2;
-        let rectY = topEllipseCenterY;
-        let rectHeight = bottomEllipseCenterY - topEllipseCenterY;
-        let rectWidth = ellipseW;
-
+        // Ορίζουμε το κέντρο της κάτω έλλειψης ως σταθερό:
+        let bottomEllipseCenterY = this.height - ellipseH / 2;
+        // Ορίζουμε το "θεμέλιο" του ορθογωνίου περιεχομένου:
+        // Το πάνω όριο του ορθογωνίου θεωρούμε ότι είναι σταθερό και ορίζεται από την αρχική θέση της πάνω έλλειψης,
+        // δηλαδή όταν το fillLevel είναι 1: topBoundary = ellipseH/2.
+        let topBoundary = ellipseH / 2;
+        let rectHeight = bottomEllipseCenterY - topBoundary;
+        
         // Υπολογισμός του ύψους του γεμίσματος βάσει του fillLevel:
         let liquidFillHeight = rectHeight * this.fillLevel;
-        // Το γεμάτο υγρό θα ξεκινάει από το κάτω όριο και ανεβαίνει:
-        let liquidRectY = bottomEllipseCenterY - liquidFillHeight;
-
+        // Το γεμάτο υγρό ξεκινάει από το κάτω όριο και ανεβαίνει μέχρι να φτάσει στο liquidFillHeight,
+        // οπότε το πάνω όριο του γεμίσματος είναι:
+        let liquidTop = bottomEllipseCenterY - liquidFillHeight;
+        
         // Σχεδιάζουμε το γεμάτο υγρό (ορθογώνιο γεμίσματος):
         p.noStroke();
         p.fill(this.fillColor);
-        p.rect(rectX, liquidRectY, rectWidth, liquidFillHeight);
-
+        p.rect(centerX - ellipseW / 2, liquidTop, ellipseW, liquidFillHeight);
+        
         // Σχεδιάζουμε την κάτω έλλειψη (γεμάτη) στο κάτω μέρος του canvas:
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, ellipseW, ellipseH);
-
-        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα:
+        
+        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα.
+        // Τροποποιούμε τη θέση ώστε το κέντρο της πάνω έλλειψης να είναι στο liquidTop (πάνω όριο του γεμίσματος)
         p.fill(this.fillColor);
         p.stroke(255);
         p.strokeWeight(2);
-        p.ellipse(centerX, topEllipseCenterY, ellipseW, ellipseH);
+        p.ellipse(centerX, liquidTop, ellipseW, ellipseH);
         p.noStroke();
 
         // Σχεδιάζουμε το outline πάνω από όλα, αν έχει οριστεί:
@@ -159,7 +156,6 @@ class Beaker {
         // Σχεδιάζουμε τις ετικέτες στο κέντρο της εικόνας:
         p.fill(0); // Χρώμα κειμένου: μαύρο
         let spacing = 20; // κάθε ετικέτα με κατακόρυφη απόσταση 20px
-        // Αν έχουμε 3 ετικέτες, το κεντρικό σημείο της εικόνας (y = this.height/2) θα είναι η μεσαία ετικέτα
         for (let i = 0; i < this.labels.length; i++) {
           let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing;
           p.text(this.labels[i], centerX, y);
