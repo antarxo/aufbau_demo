@@ -1,460 +1,203 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="UTF-8">
-  <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
-  <!-- Plotly για γραφήματα -->
-  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για λειτουργίες (χρησιμοποιείται εδώ για άλλες ανάγκες) -->
+  <meta charset="UTF-8" />
+  <title>Beaker Class Example</title>
+  <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
-    html, body {
+    body {
       margin: 0;
-      overflow: hidden; /* Αποφυγή κατακόρυφων scrollbars */
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      padding: 0;
+      font-family: sans-serif;
+      background-color: #f9f9f9;
     }
-    /* Overlay τίτλου */
-    #pageTitleOverlay {
-      position: fixed;
-      top: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-      padding: 5px 10px;
-      z-index: 1200;
+    #controls {
+      margin: 10px;
+      padding: 10px;
+      background: #fff;
       border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      white-space: nowrap;
-    }
-    #pageTitleOverlay h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: bold;
-      color: black;
-      letter-spacing: 1px;
-    }
-    #pageTitleOverlay h2 {
-      margin: 0;
-      font-size: 11px;
-      color: #333;
-    }
-    /* Διάγραμμα */
-    #plot {
-      width: 90%;
-      height: 450px;
-      margin: 60px auto 10px auto;
       box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-      border-radius: 8px;
-      background-color: #fff;
+      display: inline-block;
     }
-    /* Δεξί συρτάρι παραμέτρων */
-    .drawer {
-      width: 300px;
-      position: fixed;
-      right: -295px; /* 5px επικάλυψη από το δεξί όριο */
-      top: 100px;
-      background-color: #444;
-      color: #fff;
-      padding: 20px;
-      box-sizing: border-box;
-      transition: right 0.3s ease-in-out;
-      border-radius: 10px 0 0 10px;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-      z-index: 1000;
+    label {
+      margin-right: 5px;
     }
-    .drawer.active {
-      right: 0;
-    }
-    /* Toggle κουμπί στο δεξί drawer */
-    .toggleBtn {
-      position: absolute;
-      left: -30px; /* Μετακινούμε το κουμπί 30px προς τα έξω */
-      top: 50%;
-      transform: translateY(-50%);
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      padding: 10px 12px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 20px;
-      z-index: 1100; /* Υψηλότερο από το drawer */
-      transition: background-color 0.3s ease;
-    }
-    .toggleBtn:hover { background-color: #0056b3; }
-    /* Στοιχεία στο drawer */
-    .control-group {
-      margin-bottom: 10px;
-    }
-    .control-group label {
+    select, input[type="color"], input[type="range"] {
+      margin: 5px 0 10px 0;
       display: block;
-      margin-bottom: 3px;
-      font-weight: bold;
     }
-    .control-group input {
-      width: 100%;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    /* Κάτω controls: progress bar και κουμπιά, 15px κάτω από το διάγραμμα */
-    #controls-below {
-      width: 90%;
-      margin: 15px auto 10px auto;
-      text-align: center;
-    }
-    #progressContainer {
-      margin: 0 auto;
-      width: 80%;
-      background-color: #ddd;
-      border-radius: 5px;
-      overflow: hidden;
+    #beakerContainer {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      margin: 10px;
       box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+      background-color: #fff;
+      border-radius: 8px;
     }
-    #progressBarFill {
-      height: 20px;
-      width: 0%;
-      background-color: #28a745;
-      text-align: center;
-      line-height: 20px;
-      color: white;
-    }
-    .buttons-container {
-      margin-top: 15px;
-    }
-    .buttons-container button {
-      margin: 0 5px;
-      padding: 8px 16px;
-      font-size: 1em;
-      cursor: pointer;
-      border: none;
-      border-radius: 4px;
-      background-color: #007bff;
-      color: white;
-      transition: background-color 0.3s ease;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-    }
-    .buttons-container button:hover {
-      background-color: #0056b3;
-    }
-    #errorMsg {
-      color: red;
-      text-align: center;
-      margin-top: 10px;
-    }
-    /* Κάτω συρτάρι οδηγιών */
-    .drawer-bottom {
-      width: 90%;
-      position: fixed;
-      bottom: -420px; /* Κρυφό, συνολικό ύψος 420px */
+    /* Στυλ για τα labels μέσα στο beaker (διαφανές υπόβαθρο) */
+    .beaker-label {
+      position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #fff;
       color: #000;
-      padding: 20px;
-      box-sizing: border-box;
-      transition: bottom 0.3s ease-in-out;
-      border-top: 3px solid #007bff;
-      box-shadow: 4px -4px 8px rgba(0,0,0,0.5);
-      z-index: 1000;
-      border-radius: 8px 8px 0 0;
-      max-height: 420px;
-      overflow-y: auto;
+      font-weight: bold;
+      background-color: rgba(255,255,255,0.5); /* ημιδιάφανο back */
+      padding: 2px 5px;
+      border-radius: 4px;
     }
-    .drawer-bottom.active {
-      bottom: 0;
-    }
-    /* Toggle κουμπί οδηγιών: αρχικά στο bottom: 0px και μετακινείται μαζί με το drawer */
-    #toggleInstructionsBtn {
-      position: fixed;
-      bottom: 0; 
-      left: 50%;
-      transform: translate(-50%, 0);
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 16px;
-      z-index: 1100;
-      transition: bottom 0.3s ease, background-color 0.3s ease;
-    }
-    #toggleInstructionsBtn:hover {
-      background-color: #0056b3;
-    }
+    .label1 { top: 20px; }
+    .label2 { top: 50px; }
+    .label3 { top: 80px; }
   </style>
 </head>
 <body>
-  <!-- Overlay τίτλου -->
-  <div id="pageTitleOverlay">
-    <h1>Διαδραστική Προσομοίωση Αυτοκατάλυσης</h1>
-    <h2>2025, Created by Antonios Archontoulis, Greece</h2>
-  </div>
-  <!-- Διάγραμμα -->
-  <div id="plot"></div>
-  
-  <!-- Controls κάτω από το διάγραμμα -->
-  <div id="controls-below">
-    <div id="progressContainer">
-      <div id="progressBarFill">0%</div>
-    </div>
-    <div class="buttons-container">
-      <button onclick="updateSimulation()">Ενημέρωση</button>
-      <button onclick="resetSimulation()">Επαναφορά</button>
-    </div>
-    <div id="errorMsg"></div>
-  </div>
-  
-  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται μέσω κλάσης Drawer) -->
-  <script>
-    // Δημιουργούμε το drawer χρησιμοποιώντας DOM μεθόδους
-    class Drawer {
-      constructor(options) {
-        this.width = options.width || 300;
-        this.top = options.top || '100px';
-        this.height = options.height || 'auto';
-        this.content = options.content || '';
-        this.buttonLabel = options.buttonLabel || '|||';
-    
-        this.drawer = document.createElement('div');
-        this.drawer.className = 'drawer';
-        this.drawer.style.top = this.top;
-        this.drawer.style.height = this.height;
-        this.drawer.style.width = `${this.width}px`;
-        this.drawer.innerHTML = this.content;
-        document.body.appendChild(this.drawer);
-    
-        this.button = document.createElement('button');
-        this.button.className = 'toggleBtn';
-        this.button.innerHTML = this.buttonLabel;
-        this.drawer.appendChild(this.button);
-    
-        this.button.addEventListener('click', () => this.toggle());
-      }
-    
-      toggle() {
-        this.drawer.classList.toggle('active');
-      }
-    }
-    
-    // Μεταβλητές για την προσομοίωση
-    let simulationData = null;
-    let animationInterval = null;
-    let currentIndex = 0;
-    const dt = 1;
-    
-    // Συνάρτηση Runge-Kutta 4ης τάξης
-    function rk4Step(A, B, k, dt) {
-      const f = (A, B) => k * A * B;
-      const k1_A = -f(A, B), k1_B = f(A, B);
-      const A2 = A + k1_A * dt / 2, B2 = B + k1_B * dt / 2;
-      const k2_A = -f(A2, B2), k2_B = f(A2, B2);
-      const A3 = A + k2_A * dt / 2, B3 = B + k2_B * dt / 2;
-      const k3_A = -f(A3, B3), k3_B = f(A3, B3);
-      const A4 = A + k3_A * dt, B4 = B + k3_B * dt;
-      const k4_A = -f(A4, B4), k4_B = f(A4, B4);
-      const newA = A + (dt / 6) * (k1_A + 2 * k2_A + 2 * k3_A + k4_A);
-      const newB = B + (dt / 6) * (k1_B + 2 * k2_B + 2 * k3_B + k4_B);
-      return { newA, newB, rate: f(A, B) };
-    }
-    
-    function findMax(arr) {
-      return arr.reduce((max, x) => x > max ? x : max, -Infinity);
-    }
-    
-    // Προσομοίωση για τρία συστήματα
-    function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
-      let A_auto = A0, B_auto = C0_auto;
-      let A_red = A0, B_red = C0_red;
-      let A_green = A0, B_green = C0_green;
-      const t = [], conc_auto = [], conc_red = [], conc_green = [];
-      const rate_auto = [], rate_red = [], rate_green = [];
-      const totalSteps = Math.floor(tMax / dt);
-      for (let step = 0; step <= totalSteps; step++) {
-        let currentTime = step * dt;
-        t.push(currentTime);
-        conc_auto.push(A_auto);
-        conc_red.push(A_red);
-        conc_green.push(A_green);
-        rate_auto.push(k * A_auto * B_auto);
-        rate_red.push(k * A_red * B_red);
-        rate_green.push(k * A_green * B_green);
-        let result_auto = rk4Step(A_auto, B_auto, k, dt);
-        A_auto = Math.max(result_auto.newA, 0);
-        B_auto = result_auto.newB;
-        let result_red = rk4Step(A_red, B_red, k, dt);
-        A_red = Math.max(result_red.newA, 0);
-        B_red = result_red.newB;
-        let result_green = rk4Step(A_green, B_green, k, dt);
-        A_green = Math.max(result_green.newA, 0);
-        B_green = result_green.newB;
-      }
-      return { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green };
-    }
-    
-    function updateProgressBar(percentage) {
-      const pb = document.getElementById('progressBarFill');
-      pb.style.width = percentage + "%";
-      pb.innerText = Math.floor(percentage) + "%";
-    }
-    
-    function updateGraph(currentIndex) {
-      const { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green } = simulationData;
-      const maxRate = Math.max(findMax(rate_auto), findMax(rate_red), findMax(rate_green));
-      const normalize = arr => maxRate > 0 ? arr.map(x => x / maxRate) : arr;
-      const t_subset = t.slice(0, currentIndex);
-      const conc_auto_subset = conc_auto.slice(0, currentIndex);
-      const conc_red_subset = conc_red.slice(0, currentIndex);
-      const conc_green_subset = conc_green.slice(0, currentIndex);
-      const rate_auto_subset = rate_auto.slice(0, currentIndex);
-      const rate_red_subset = rate_red.slice(0, currentIndex);
-      const rate_green_subset = rate_green.slice(0, currentIndex);
-      const traces = [
-        { x: t_subset, y: conc_auto_subset, name: 'Αυτοκατάλυση', line: { color: 'blue' } },
-        { x: t_subset, y: normalize(rate_auto_subset), name: 'Ταχύτητα Αυτοκατάλυσης', yaxis: 'y2', line: { color: 'blue', dash: 'dot' } },
-        { x: t_subset, y: conc_red_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_red').value}M)`, line: { color: 'red' } },
-        { x: t_subset, y: normalize(rate_red_subset), name: 'Ταχύτητα Κόκκινης', yaxis: 'y2', line: { color: 'red', dash: 'dot' } },
-        { x: t_subset, y: conc_green_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_green').value}M)`, line: { color: 'green' } },
-        { x: t_subset, y: normalize(rate_green_subset), name: 'Ταχύτητα Πράσινης', yaxis: 'y2', line: { color: 'green', dash: 'dot' } }
-      ];
-      const layout = {
-        title: `Σύγκριση Αποτελεσμάτων (Μέγ. Χρόνος: ${document.getElementById('tMax').value}s)`,
-        xaxis: { title: 'Χρόνος (s)', range: [0, simulationData.t[simulationData.t.length - 1]] },
-        yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value) * 1.1] },
-        yaxis2: { title: 'Κανονικοποιημένη Ταχύτητα', overlaying: 'y', side: 'right', range: [0, 1.1] },
-        legend: { orientation: 'h', x: 0, y: -0.2 },
-        margin: { t: 50, b: 80, r: 90 } // Δεξιός περιθώριος 90px
+<div id="controls">
+  <h3>Ρυθμίσεις Beaker</h3>
+  <label for="outlineSelect">Επιλογή Περιγράμματος:</label>
+  <select id="outlineSelect">
+    <option value="gred.png" selected>Κόκκινο Περίγραμμα</option>
+    <option value="ggreen.png">Πράσινο Περίγραμμα</option>
+    <option value="gblue.png">Μπλε Περίγραμμα</option>
+  </select>
+
+  <label for="fillColor">Χρώμα Υγρού:</label>
+  <input type="color" id="fillColor" value="#0000ff" />
+
+  <label for="fillLevel">Στάθμη (0..1):</label>
+  <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
+</div>
+
+<!-- Περιοχή που θα εμφανιστεί το beaker -->
+<div id="beakerContainer">
+  <!-- Εδώ θα τοποθετηθούν οι ετικέτες (labels) -->
+  <div class="beaker-label label1">Label 1</div>
+  <div class="beaker-label label2">Label 2</div>
+  <div class="beaker-label label3">Label 3</div>
+</div>
+
+<script>
+/**
+ * Παράδειγμα κλάσης Beaker, με “εσωτερικό” καμβά p5 που σχεδιάζει το beaker + υγρό.
+ * Μέσα στον container μπορούμε να τοποθετήσουμε HTML στοιχεία (labels).
+ */
+class Beaker {
+  /**
+   * @param {object} options - Ρυθμίσεις.
+   * @param {string} options.containerId - Το id ενός div που θα “φιλοξενήσει” το p5 canvas.
+   * @param {number} options.width - Πλάτος canvas.
+   * @param {number} options.height - Ύψος canvas.
+   */
+  constructor(options) {
+    this.containerId = options.containerId;
+    this.width = options.width || 300;
+    this.height = options.height || 300;
+    this.outlineImg = null;     // εικόνα για το περίγραμμα
+    this.fillColor = '#0000ff'; // αρχικό χρώμα υγρού
+    this.fillLevel = 0.5;       // [0..1]
+    this.imgWidth = this.width; // διαστάσεις σχεδίασης εικόνας
+    this.imgHeight = this.height;
+    this.p5Instance = null;
+  }
+
+  /**
+   * Ρυθμίζει την εικόνα περιγράμματος (π.χ. "gred.png")
+   * Θα την φορτώσει ασύγχρονα.
+   */
+  setOutlineImage(imgPath) {
+    if (!this.p5Instance) return;
+    let p = this.p5Instance;
+    p.loadImage(imgPath, (loadedImg) => {
+      this.outlineImg = loadedImg;
+    });
+  }
+
+  /**
+   * Ορίζει το χρώμα του υγρού (string π.χ. "#ff0000")
+   */
+  setFillColor(col) {
+    this.fillColor = col;
+  }
+
+  /**
+   * Ορίζει τη στάθμη [0..1]
+   */
+  setFillLevel(level) {
+    this.fillLevel = Math.max(0, Math.min(level, 1));
+  }
+
+  /**
+   * Εκκίνηση p5 (μία φορά)
+   */
+  initP5() {
+    const sketch = (p) => {
+      p.preload = () => {
+        // Μπορούμε εδώ να φορτώσουμε μια default εικόνα, αν θέλουμε.
       };
-      Plotly.react('plot', traces, layout);
-    }
-    
-    function animateSimulation() {
-      if (!simulationData) return;
-      currentIndex = 0;
-      const totalPoints = simulationData.t.length;
-      if (animationInterval) clearInterval(animationInterval);
-      animationInterval = setInterval(() => {
-        currentIndex++;
-        updateGraph(currentIndex);
-        updateProgressBar((currentIndex / totalPoints) * 100);
-        if (currentIndex >= totalPoints) {
-          clearInterval(animationInterval);
+      p.setup = () => {
+        let cnv = p.createCanvas(this.width, this.height);
+        let container = document.getElementById(this.containerId);
+        cnv.parent(container);
+        p.background(0,0,0,0); // διάφανο υπόβαθρο
+      };
+      p.draw = () => {
+        p.clear(); // καθαρίζουμε με διάφανο (αντί για background)
+        // Σχεδιάζουμε το υγρό
+        // Το υγρό είναι ορθογώνιο στο κάτω μέρος
+        p.noStroke();
+        p.fill(this.fillColor);
+        let liquidHeight = this.height * this.fillLevel;
+        let yTop = this.height - liquidHeight;
+        p.rect(0, yTop, this.width, liquidHeight);
+
+        // Σχεδιάζουμε το περίγραμμα από πάνω
+        if (this.outlineImg) {
+          p.image(this.outlineImg, 0, 0, this.imgWidth, this.imgHeight);
         }
-      }, 30);
-    }
-    
-    function updateSimulation() {
-      const A0 = parseFloat(document.getElementById('A0').value);
-      const k = parseFloat(document.getElementById('k').value);
-      const C0_red = parseFloat(document.getElementById('C0_red').value);
-      const C0_green = parseFloat(document.getElementById('C0_green').value);
-      const tMax = parseFloat(document.getElementById('tMax').value);
-      if (isNaN(A0) || isNaN(k) || isNaN(C0_red) || isNaN(C0_green) || isNaN(tMax) ||
-          A0 < 0 || k < 0 || C0_red < 0 || C0_green < 0 || tMax <= 0) {
-        document.getElementById('errorMsg').innerText = "Παρακαλώ εισάγετε έγκυρες, θετικές τιμές.";
-        return;
-      }
-      document.getElementById('errorMsg').innerText = "";
-      const C0_auto = 1e-9;
-      simulationData = simulate(A0, C0_auto, C0_red, C0_green, k, tMax);
-      animateSimulation();
-    }
-    
-    function resetSimulation() {
-      document.getElementById('A0').value = "0.1";
-      document.getElementById('k').value = "0.8";
-      document.getElementById('C0_red').value = "0.001";
-      document.getElementById('C0_green').value = "0.1";
-      document.getElementById('tMax').value = "350";
-      document.getElementById('errorMsg').innerText = "";
-      updateProgressBar(0);
-      updateSimulation();
-    }
-  </script>
-  
-  <!-- Στοιχεία εισόδου παραμέτρων στο δεξί συρτάρι -->
-  <script>
-    let simulationDrawer;
-    function initializeDrawersAndSimulation() {
-      const controlsHTML = `
-        <div class="control-group">
-          <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
-          <input type="number" id="A0" value="0.1" step="0.01" min="0">
-        </div>
-        <div class="control-group">
-          <label for="k" title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k (M⁻¹s⁻¹):</label>
-          <input type="number" id="k" value="0.8" step="0.01" min="0">
-        </div>
-        <div class="control-group">
-          <label for="C0_red" title="Αρχική συγκέντρωση καταλύτη για την 'κόκκινη' αντίδραση (M)">C₀ (Κόκκινη) (M):</label>
-          <input type="number" id="C0_red" value="0.001" step="0.001" min="0">
-        </div>
-        <div class="control-group">
-          <label for="C0_green" title="Αρχική συγκέντρωση καταλύτη για την 'πράσινη' αντίδραση (M)">C₀ (Πράσινη) (M):</label>
-          <input type="number" id="C0_green" value="0.1" step="0.01" min="0">
-        </div>
-        <div class="control-group">
-          <label for="tMax" title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος (s):</label>
-          <input type="number" id="tMax" value="350" step="100" min="1">
-        </div>
-      `;
-      simulationDrawer = new Drawer({
-        top: '100px',
-        height: 'auto',
-        content: controlsHTML,
-        buttonLabel: '|||'
-      });
-      updateSimulation();
-    }
-  </script>
-  
-  <!-- Κάτω συρτάρι οδηγιών -->
-  <script>
-    let instructionsDrawer;
-    function setupInstructionsDrawer() {
-      const instructionsHTML = `
-        <h3 style="margin-top:0;">Οδηγίες Χρήσης</h3>
-        <ul style="padding-left:20px; margin:0;">
-          <li>Χρησιμοποιήστε τις παραμέτρους στο δεξί συρτάρι για να ρυθμίσετε την προσομοίωση.</li>
-          <li>Πατήστε "Ενημέρωση" για να ξεκινήσει η προσομοίωση με animation.</li>
-          <li>Τα κουμπιά "Επαναφορά" επανέρχονται στις προεπιλεγμένες τιμές.</li>
-          <li>Ο progress bar δείχνει την εξέλιξη της προσομοίωσης.</li>
-        </ul>
-      `;
-      instructionsDrawer = document.createElement('div');
-      instructionsDrawer.innerHTML = instructionsHTML;
-      instructionsDrawer.className = "drawer-bottom";
-      document.body.appendChild(instructionsDrawer);
-    }
-    function toggleInstructionsDrawer() {
-      const toggleBtn = document.getElementById("toggleInstructionsBtn");
-      if (instructionsDrawer) {
-        instructionsDrawer.classList.toggle('active');
-        // Όταν το drawer οδηγιών είναι ανοιχτό, το κουμπί παραμένει "κολλημένο" στο πάνω του όριο,
-        // διαφορετικά παραμένει στο bottom: 0px.
-        if (instructionsDrawer.classList.contains('active')) {
-          toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
-        } else {
-          toggleBtn.style.bottom = "0px";
-        }
-      }
-    }
-  </script>
-  
-  <!-- Toggle κουμπί οδηγιών με ετικέτα "Οδηγίες |||" -->
-  <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες |||</button>
-  
-  <!-- Εκκίνηση όλων των στοιχείων -->
-  <script>
-    window.onload = function() {
-      setupInstructionsDrawer();
-      initializeDrawersAndSimulation();
-    }
-  </script>
+      };
+    };
+    this.p5Instance = new p5(sketch);
+  }
+}
+
+// ------- Παράδειγμα χρήσης --------
+let myBeaker;
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Δημιουργούμε το Beaker
+  myBeaker = new Beaker({
+    containerId: 'beakerContainer',
+    width: 400,
+    height: 400
+  });
+  // Αρχικοποιούμε το p5
+  myBeaker.initP5();
+
+  // Συνδέουμε τα στοιχεία ελέγχου
+  const outlineSelect = document.getElementById('outlineSelect');
+  const fillColorInput = document.getElementById('fillColor');
+  const fillLevelRange = document.getElementById('fillLevel');
+
+  // Όταν αλλάζει το outline
+  outlineSelect.addEventListener('change', () => {
+    let imgPath = outlineSelect.value;
+    myBeaker.setOutlineImage(imgPath);
+  });
+  // Όταν αλλάζει το χρώμα του υγρού
+  fillColorInput.addEventListener('input', () => {
+    myBeaker.setFillColor(fillColorInput.value);
+  });
+  // Όταν αλλάζει η στάθμη
+  fillLevelRange.addEventListener('input', () => {
+    myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
+  });
+
+  // Θέτουμε αρχικές τιμές
+  myBeaker.setOutlineImage(outlineSelect.value); // π.χ. "gred.png"
+  myBeaker.setFillColor(fillColorInput.value);   // "#0000ff"
+  myBeaker.setFillLevel(parseFloat(fillLevelRange.value)); // 0.5
+});
+</script>
 </body>
 </html>
