@@ -50,11 +50,11 @@
       border-radius: 8px;
       background-color: #fff;
     }
-    /* Στυλ για το δεξί συρτάρι (μόνο παραμέτρους) */
+    /* Στυλ για το δεξί συρτάρι (παράμετροι) */
     .drawer {
       width: 300px;
       position: fixed;
-      right: -250px; /* Αφήνει εκτεθειμένο το toggle button */
+      right: -260px; /* Κρύβει το συρτάρι, αφήνοντας εμφανές μόνο το toggle κουμπί */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -68,7 +68,7 @@
     .drawer.active {
       right: 0;
     }
-    /* Μεγαλύτερο toggle κουμπί με μικρότερη επικάλυψη στο συρτάρι */
+    /* Μεγαλύτερο toggle κουμπί για το δεξί συρτάρι */
     .toggleBtn {
       position: absolute;
       left: 100%; /* Τοποθετείται ακριβώς δίπλα στο συρτάρι */
@@ -100,13 +100,11 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* Δομή των controls κάτω από το διάγραμμα: πρώτα το progress bar, έπειτα τα κουμπιά (με κενό 15px) */
+    /* Κάτω controls: progress bar και κουμπιά 15px κάτω από το διάγραμμα */
     #controls-below {
       width: 90%;
-      margin: 0 auto 10px auto;
+      margin: 15px auto 10px auto;
       text-align: center;
-      /* Μετατόπιση κατά 60px προς τα κάτω */
-      transform: translateY(60px);
     }
     #progressContainer {
       margin: 0 auto;
@@ -137,7 +135,7 @@
       background-color: #007bff;
       color: white;
       transition: background-color 0.3s ease;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5); /* Προσθέτει σκιά στα κουμπιά */
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.5); /* Σκιά στα κουμπιά */
     }
     .buttons-container button:hover {
       background-color: #0056b3;
@@ -147,11 +145,11 @@
       text-align: center;
       margin-top: 10px;
     }
-    /* Κάτω συρτάρι οδηγιών: αύξηση ύψους κατά 100px (max-height 340px) και μετατόπιση αρχικού bottom -350px */
+    /* Κάτω συρτάρι οδηγιών: αυξημένο ύψος (+80) */
     .drawer-bottom {
       width: 90%;
       position: fixed;
-      bottom: -350px;
+      bottom: -420px; /* Κρυφό, με ύψος 420px */
       left: 50%;
       transform: translateX(-50%);
       background-color: #fff;
@@ -163,16 +161,16 @@
       box-shadow: 4px -4px 8px rgba(0,0,0,0.5);
       z-index: 1000;
       border-radius: 8px 8px 0 0;
-      max-height: 340px;
+      max-height: 420px;
       overflow-y: auto;
     }
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί για το κάτω συρτάρι οδηγιών */
+    /* Toggle κουμπί οδηγιών: τοποθετείται στο κάτω όριο της σελίδας ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού */
     #toggleInstructionsBtn {
       position: fixed;
-      bottom: 20px; /* Ορατή θέση στο κάτω μέρος */
+      bottom: 0; /* Αρχικά στο κάτω όριο της σελίδας */
       left: 50%;
       transform: translate(-50%, 0);
       background-color: #007bff;
@@ -254,7 +252,6 @@
       let A3 = A + k2_A * dt/2, B3 = B + k2_B * dt/2;
       let k3_A = -f(A3, B3), k3_B = f(A3, B3);
       let A4 = A + k3_A * dt, B4 = B + k3_B * dt;
-      let k4_A = -f(A4, B4), k4_B = f(A4, B4);
       let newA = A + (dt/6)*(k1_A+2*k2_A+2*k3_A+k4_A);
       let newB = B + (dt/6)*(k1_B+2*k2_B+2*k3_B+k4_B);
       return { newA, newB, rate: f(A, B) };
@@ -378,7 +375,7 @@
   <script>
     let simulationDrawer;
     function setup() {
-      // Αντί για noCanvas(), καλούμε το setup μόνο μία φορά
+      // Χρησιμοποιούμε το setup μία φορά για δημιουργία του δεξιού συρταριού
       const controlsHTML = `
         <div class="control-group">
           <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
@@ -407,7 +404,6 @@
         content: controlsHTML,
         buttonLabel: '|||'
       });
-      // Εκκίνηση προσομοίωσης με τις αρχικές τιμές
       updateSimulation();
     }
   </script>
@@ -431,25 +427,25 @@
       document.body.appendChild(instructionsDrawer);
     }
     function toggleInstructionsDrawer() {
+      const toggleBtn = document.getElementById("toggleInstructionsBtn");
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
-        // Ενημέρωση θέσης του toggle κουμπιού ώστε να ακολουθεί το ύψος του συρταριού οδηγιών
-        const toggleBtn = document.getElementById("toggleInstructionsBtn");
+        // Αν ενεργοποιείται, το κουμπί μετακινείται ώστε να ευθυγραμμίζεται με το πάνω μέρος του συρταριού,
+        // αλλιώς επιστρέφει στο κάτω όριο της σελίδας (bottom: 0)
         if (instructionsDrawer.classList.contains('active')) {
           toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
         } else {
-          toggleBtn.style.bottom = "20px";
+          toggleBtn.style.bottom = "0px";
         }
       }
     }
   </script>
   
-  <!-- Toggle κουμπί για το κάτω συρτάρι οδηγιών -->
+  <!-- Toggle κουμπί οδηγιών -->
   <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες</button>
   
   <!-- Εκκίνηση όλων των στοιχείων -->
   <script>
-    // Αφαιρούμε το επιπλέον new p5() για να μην δημιουργείται περιττός καμβάς
     window.onload = function() {
       setupInstructionsDrawer();
       setup();
