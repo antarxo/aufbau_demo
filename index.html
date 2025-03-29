@@ -2,109 +2,100 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Class Example</title>
+  <title>Beaker Example with Custom Drawing</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 10px;
       font-family: sans-serif;
-      background-color: #f9f9f9;
+      background: #f9f9f9;
     }
     #controls {
-      margin: 10px;
+      margin-bottom: 10px;
       padding: 10px;
       background: #fff;
+      border: 1px solid #ccc;
       border-radius: 8px;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
       display: inline-block;
     }
     label {
       margin-right: 5px;
     }
-    select, input[type="color"], input[type="range"] {
-      margin: 5px 0 10px 0;
-      display: block;
-    }
     #beakerContainer {
       position: relative;
       width: 400px;
       height: 400px;
-      margin: 10px;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-      background-color: #fff;
+      border: 1px solid #ccc;
       border-radius: 8px;
+      background: transparent;
+      margin-top: 10px;
     }
-    /* Στυλ για τα labels μέσα στο beaker (διαφανές υπόβαθρο) */
+    /* Οι ετικέτες που θα τοποθετηθούν πάνω στο beaker */
     .beaker-label {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      color: #000;
-      font-weight: bold;
-      background-color: rgba(255,255,255,0.5); /* ημιδιάφανο back */
+      background: rgba(255,255,255,0.7);
       padding: 2px 5px;
       border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
     }
-    .label1 { top: 20px; }
-    .label2 { top: 50px; }
-    .label3 { top: 80px; }
+    .label1 { top: 10px; }
+    .label2 { top: 40px; }
+    .label3 { top: 70px; }
   </style>
 </head>
 <body>
+
 <div id="controls">
   <h3>Ρυθμίσεις Beaker</h3>
   <label for="outlineSelect">Επιλογή Περιγράμματος:</label>
   <select id="outlineSelect">
-    <option value="gred.png" selected>Κόκκινο Περίγραμμα</option>
-    <option value="ggreen.png">Πράσινο Περίγραμμα</option>
-    <option value="gblue.png">Μπλε Περίγραμμα</option>
+    <option value="gred.png" selected>Κόκκινο</option>
+    <option value="ggreen.png">Πράσινο</option>
+    <option value="gblue.png">Μπλε</option>
   </select>
-
+  <br />
   <label for="fillColor">Χρώμα Υγρού:</label>
   <input type="color" id="fillColor" value="#0000ff" />
-
-  <label for="fillLevel">Στάθμη (0..1):</label>
+  <br />
+  <label for="fillLevel">Στάθμη Υγρού (0–1):</label>
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
-<!-- Περιοχή που θα εμφανιστεί το beaker -->
 <div id="beakerContainer">
-  <!-- Εδώ θα τοποθετηθούν οι ετικέτες (labels) -->
-  <div class="beaker-label label1">Label 1</div>
-  <div class="beaker-label label2">Label 2</div>
-  <div class="beaker-label label3">Label 3</div>
+  <!-- Τα HTML labels που τοποθετούνται πάνω από το canvas -->
+  <div class="beaker-label label1">Ετικέτα 1</div>
+  <div class="beaker-label label2">Ετικέτα 2</div>
+  <div class="beaker-label label3">Ετικέτα 3</div>
 </div>
 
 <script>
-/**
- * Παράδειγμα κλάσης Beaker, με “εσωτερικό” καμβά p5 που σχεδιάζει το beaker + υγρό.
- * Μέσα στον container μπορούμε να τοποθετήσουμε HTML στοιχεία (labels).
- */
+// Κλάση Beaker που σχεδιάζει το beaker με δύο ελλείψεις και ορθογώνιο για το υγρό
 class Beaker {
   /**
-   * @param {object} options - Ρυθμίσεις.
-   * @param {string} options.containerId - Το id ενός div που θα “φιλοξενήσει” το p5 canvas.
-   * @param {number} options.width - Πλάτος canvas.
-   * @param {number} options.height - Ύψος canvas.
+   * @param {object} options
+   *   containerId: id του div που φιλοξενεί το p5 canvas
+   *   width, height: διαστάσεις του canvas
    */
   constructor(options) {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
-    this.outlineImg = null;     // εικόνα για το περίγραμμα
-    this.fillColor = '#0000ff'; // αρχικό χρώμα υγρού
-    this.fillLevel = 0.5;       // [0..1]
-    this.imgWidth = this.width; // διαστάσεις σχεδίασης εικόνας
-    this.imgHeight = this.height;
+    // Αρχικές ρυθμίσεις υγρού:
+    this.fillColor = "#0000ff"; // default χρώμα υγρού
+    this.fillLevel = 0.5;       // 50% γεμάτο
+    // Εικόνα περιγράμματος (outline) – αρχικά κενή
+    this.outlineImg = null;
+    // Δεδομένα για σχεδίαση (θα προσαρμοστούν στο p5)
     this.p5Instance = null;
   }
 
-  /**
-   * Ρυθμίζει την εικόνα περιγράμματος (π.χ. "gred.png")
-   * Θα την φορτώσει ασύγχρονα.
-   */
+  // Θέτουμε το outline (περίγραμμα) από εικόνα
   setOutlineImage(imgPath) {
     if (!this.p5Instance) return;
     let p = this.p5Instance;
@@ -113,47 +104,50 @@ class Beaker {
     });
   }
 
-  /**
-   * Ορίζει το χρώμα του υγρού (string π.χ. "#ff0000")
-   */
-  setFillColor(col) {
-    this.fillColor = col;
+  // Θέτουμε το χρώμα του υγρού
+  setFillColor(newColor) {
+    this.fillColor = newColor;
   }
 
-  /**
-   * Ορίζει τη στάθμη [0..1]
-   */
+  // Θέτουμε το ποσοστό γεμίσματος (0..1)
   setFillLevel(level) {
     this.fillLevel = Math.max(0, Math.min(level, 1));
   }
 
-  /**
-   * Εκκίνηση p5 (μία φορά)
-   */
+  // Δημιουργούμε το p5 instance στο container
   initP5() {
     const sketch = (p) => {
-      p.preload = () => {
-        // Μπορούμε εδώ να φορτώσουμε μια default εικόνα, αν θέλουμε.
-      };
       p.setup = () => {
         let cnv = p.createCanvas(this.width, this.height);
         let container = document.getElementById(this.containerId);
         cnv.parent(container);
-        p.background(0,0,0,0); // διάφανο υπόβαθρο
+        p.clear();
       };
       p.draw = () => {
-        p.clear(); // καθαρίζουμε με διάφανο (αντί για background)
-        // Σχεδιάζουμε το υγρό
-        // Το υγρό είναι ορθογώνιο στο κάτω μέρος
+        p.clear();
+        // Δείκτης για το υγρό:
+        let liquidHeight = this.height * this.fillLevel;
+        // Οριζόντια διάσταση του υγρού: 70% του width
+        let liquidWidth = this.width * 0.7;
+        // Στοίχιση στο κέντρο
+        let liquidX = (this.width - liquidWidth) / 2;
+        let containerBottom = this.height; // κάτω όριο canvas
+        // Σχεδιάζουμε την κάτω έλλειψη (χωρίς περίγραμμα)
         p.noStroke();
         p.fill(this.fillColor);
-        let liquidHeight = this.height * this.fillLevel;
-        let yTop = this.height - liquidHeight;
-        p.rect(0, yTop, this.width, liquidHeight);
-
-        // Σχεδιάζουμε το περίγραμμα από πάνω
+        // Η κάτω έλλειψη σχεδιάζεται στο κάτω μέρος του υγρού
+        p.ellipse(liquidX + liquidWidth/2, containerBottom, liquidWidth, liquidWidth * 0.3);
+        // Σχεδιάζουμε το ορθογώνιο (υγρό)
+        p.rect(liquidX, containerBottom - liquidHeight, liquidWidth, liquidHeight);
+        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα
+        p.noFill();
+        p.stroke(255);
+        p.strokeWeight(2);
+        p.ellipse(liquidX + liquidWidth/2, containerBottom - liquidHeight, liquidWidth, liquidWidth * 0.3);
+        p.noStroke();
+        // Τέλος, σχεδιάζουμε το outline (αν έχει οριστεί)
         if (this.outlineImg) {
-          p.image(this.outlineImg, 0, 0, this.imgWidth, this.imgHeight);
+          p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
       };
     };
@@ -161,42 +155,40 @@ class Beaker {
   }
 }
 
-// ------- Παράδειγμα χρήσης --------
+// ----- Χρήση της κλάσης -----
 let myBeaker;
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Δημιουργούμε το Beaker
+  // Δημιουργούμε το Beaker στο container με id "beakerContainer"
   myBeaker = new Beaker({
     containerId: 'beakerContainer',
     width: 400,
     height: 400
   });
-  // Αρχικοποιούμε το p5
   myBeaker.initP5();
 
-  // Συνδέουμε τα στοιχεία ελέγχου
+  // Στοιχεία ελέγχου:
   const outlineSelect = document.getElementById('outlineSelect');
   const fillColorInput = document.getElementById('fillColor');
   const fillLevelRange = document.getElementById('fillLevel');
 
-  // Όταν αλλάζει το outline
+  // Όταν αλλάζει το περίγραμμα:
   outlineSelect.addEventListener('change', () => {
-    let imgPath = outlineSelect.value;
-    myBeaker.setOutlineImage(imgPath);
+    myBeaker.setOutlineImage(outlineSelect.value);
   });
-  // Όταν αλλάζει το χρώμα του υγρού
+  // Όταν αλλάζει το χρώμα του υγρού:
   fillColorInput.addEventListener('input', () => {
     myBeaker.setFillColor(fillColorInput.value);
   });
-  // Όταν αλλάζει η στάθμη
+  // Όταν αλλάζει η στάθμη:
   fillLevelRange.addEventListener('input', () => {
     myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
   });
 
-  // Θέτουμε αρχικές τιμές
-  myBeaker.setOutlineImage(outlineSelect.value); // π.χ. "gred.png"
-  myBeaker.setFillColor(fillColorInput.value);   // "#0000ff"
-  myBeaker.setFillLevel(parseFloat(fillLevelRange.value)); // 0.5
+  // Αρχικές τιμές:
+  myBeaker.setOutlineImage(outlineSelect.value);
+  myBeaker.setFillColor(fillColorInput.value);
+  myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
 });
 </script>
 </body>
