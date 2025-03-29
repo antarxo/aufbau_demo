@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Βελτιωμένη Αυτοκατάλυση</title>
+  <title>Βελτιωμένη Αυτοκατάλυση με RK4</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
   <style>
@@ -14,16 +14,30 @@
     h1 {
       text-align: center;
     }
+    #plot {
+      width: 90%;
+      height: 500px;
+      margin: auto;
+      margin-bottom: 20px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      background-color: #fff;
+    }
+    .controls-container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: auto;
+      margin-bottom: 20px;
+    }
     .container {
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
       justify-content: center;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     .input-group {
       flex: 1 1 200px;
@@ -83,47 +97,51 @@
 </head>
 <body>
   <h1>Προσομοίωση Αυτοκατάλυσης με RK4</h1>
-  <div class="container">
-    <!-- Ομαδοποιημένα πεδία εισόδου με tooltips -->
-    <div class="input-group">
-      <label title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
-      <input type="number" id="A0" value="0.1" step="0.01" min="0">
+  
+  <!-- Διάγραμμα στην κορυφή -->
+  <div id="plot"></div>
+  
+  <!-- Περιοχή Ελέγχου -->
+  <div class="controls-container">
+    <div class="container">
+      <!-- Ομαδοποιημένα πεδία εισόδου με tooltips -->
+      <div class="input-group">
+        <label title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
+        <input type="number" id="A0" value="0.1" step="0.01" min="0">
+      </div>
+      <div class="input-group">
+        <label title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k (M⁻¹s⁻¹):</label>
+        <input type="number" id="k" value="0.2" step="0.01" min="0">
+      </div>
+      <div class="input-group">
+        <label title="Αρχική συγκέντρωση καταλύτη για την 'κόκκινη' αντίδραση (M)">C₀ (Κόκκινη) (M):</label>
+        <input type="number" id="C0_red" value="0.001" step="0.001" min="0">
+      </div>
+      <div class="input-group">
+        <label title="Αρχική συγκέντρωση καταλύτη για την 'πράσινη' αντίδραση (M)">C₀ (Πράσινη) (M):</label>
+        <input type="number" id="C0_green" value="0.1" step="0.01" min="0">
+      </div>
+      <div class="input-group">
+        <label title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος (s):</label>
+        <input type="number" id="tMax" value="500" step="100" min="1">
+      </div>
     </div>
-    <div class="input-group">
-      <label title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k (M⁻¹s⁻¹):</label>
-      <input type="number" id="k" value="0.2" step="0.01" min="0">
+    
+    <div class="buttons">
+      <button onclick="updatePlot()">Ενημέρωση</button>
+      <button onclick="resetInputs()">Επαναφορά</button>
     </div>
-    <div class="input-group">
-      <label title="Αρχική συγκέντρωση καταλύτη για την 'κόκκινη' αντίδραση (M)">C₀ (Κόκκινη) (M):</label>
-      <input type="number" id="C0_red" value="0.001" step="0.001" min="0">
+    
+    <!-- Progress bar -->
+    <div id="progressContainer">
+      <div id="progressBar">
+        <div id="progressBarFill">0%</div>
+      </div>
     </div>
-    <div class="input-group">
-      <label title="Αρχική συγκέντρωση καταλύτη για την 'πράσινη' αντίδραση (M)">C₀ (Πράσινη) (M):</label>
-      <input type="number" id="C0_green" value="0.1" step="0.01" min="0">
-    </div>
-    <div class="input-group">
-      <label title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος (s):</label>
-      <input type="number" id="tMax" value="500" step="100" min="1">
-    </div>
+    
+    <!-- Μήνυμα σφάλματος -->
+    <div id="errorMsg"></div>
   </div>
-  
-  <div class="buttons">
-    <button onclick="updatePlot()">Ενημέρωση</button>
-    <button onclick="resetInputs()">Επαναφορά</button>
-  </div>
-  
-  <!-- Progress bar -->
-  <div id="progressContainer">
-    <div id="progressBar">
-      <div id="progressBarFill">0%</div>
-    </div>
-  </div>
-  
-  <!-- Περιοχή για το διάγραμμα -->
-  <div id="plot" style="width: 90%; height: 500px; margin: auto;"></div>
-  
-  <!-- Μήνυμα σφάλματος -->
-  <div id="errorMsg"></div>
   
   <script>
     const dt = 1;  // βήμα χρόνου (s)
@@ -199,7 +217,6 @@
         conc_auto.push(A_auto);
         conc_red.push(A_red);
         conc_green.push(A_green);
-        // Καταγραφή ρυθμού από το αρχικό σημείο (πριν την ενημέρωση)
         rate_auto.push(k * A_auto * B_auto);
         rate_red.push(k * A_red * B_red);
         rate_green.push(k * A_green * B_green);
