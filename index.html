@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για τη δημιουργία των συρταριών -->
+  <!-- p5.js για τα drawers -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     body {
@@ -41,10 +41,10 @@
       font-size: 11px;
       color: #333;
     }
-    /* Διάγραμμα στην κορυφή με μειωμένο ύψος */
+    /* Διάγραμμα με ύψος 450px */
     #plot {
       width: 90%;
-      height: 200px;
+      height: 450px;
       margin: 60px auto 10px auto;
       box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
       border-radius: 8px;
@@ -54,7 +54,7 @@
     .drawer {
       width: 300px;
       position: fixed;
-      right: -270px; /* λιγότερη επικάλυψη */
+      right: -270px; /* λιγότερη επικάλυψη, ώστε το περιεχόμενο να μην καλύπτεται */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -68,24 +68,24 @@
     .drawer.active {
       right: 0;
     }
-    /* Μεγαλύτερο toggle κουμπί με μικρότερη επικάλυψη */
+    /* Μεγαλύτερο toggle κουμπί με μικρότερη επικάλυψη στο συρτάρι */
     .toggleBtn {
       position: absolute;
-      right: calc(100% - 35px);
+      right: -5px; /* Το κουμπί εμφανίζεται εξωτερικά, με μόλις 5px επικάλυψη */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
       color: #fff;
       border: none;
-      padding: 8px 10px;
+      padding: 10px 12px;
       cursor: pointer;
       border-radius: 5px;
-      font-size: 18px;
+      font-size: 20px;
       z-index: 1100;
       transition: background-color 0.3s ease;
     }
     .toggleBtn:hover { background-color: #0056b3; }
-    /* Στυλ για τα στοιχεία παραμέτρων μέσα στο drawer */
+    /* Στοιχεία παραμέτρων στο drawer */
     .control-group {
       margin-bottom: 10px;
     }
@@ -105,6 +105,8 @@
       width: 90%;
       margin: 0 auto 10px auto;
       text-align: center;
+      /* Ανέβασμα κατά 60px από την προηγούμενη θέση */
+      transform: translateY(-60px);
     }
     #controls-below button {
       margin: 0 5px;
@@ -140,7 +142,7 @@
       text-align: center;
       margin-top: 10px;
     }
-    /* Νέο κάτω συρτάρι για οδηγίες */
+    /* Κάτω συρτάρι οδηγιών */
     .drawer-bottom {
       width: 90%;
       position: fixed;
@@ -162,7 +164,7 @@
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί για το κάτω συρτάρι */
+    /* Toggle κουμπί για το κάτω συρτάρι οδηγιών */
     #toggleInstructionsBtn {
       position: fixed;
       bottom: 0;
@@ -204,7 +206,7 @@
   
   <!-- Δεξί συρτάρι παραμέτρων -->
   <script>
-    // Κλάση Drawer (βασισμένη στο αρχικό παράδειγμα)
+    // Κλάση Drawer χρησιμοποιώντας p5.js (όπως στο προηγούμενο παράδειγμα)
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -230,7 +232,7 @@
       }
     }
     
-    // Global μεταβλητές για την animation της προσομοίωσης
+    // Global μεταβλητές για animation της προσομοίωσης
     let simulationData = null;
     let animationInterval = null;
     let currentIndex = 0;
@@ -403,31 +405,41 @@
     }
   </script>
   
-  <!-- Νέο κάτω συρτάρι για οδηγίες -->
+  <!-- Κάτω συρτάρι οδηγιών -->
   <script>
     let instructionsDrawer;
     function setupInstructionsDrawer() {
       const instructionsHTML = `
         <h3 style="margin-top:0;">Οδηγίες Χρήσης</h3>
-        <ul style="padding-left:20px;">
+        <ul style="padding-left:20px; margin:0;">
           <li>Χρησιμοποιήστε τις παραμέτρους στο δεξί συρτάρι για να ρυθμίσετε την προσομοίωση.</li>
           <li>Πατήστε "Ενημέρωση" για να ξεκινήσει η προσομοίωση με animation.</li>
-          <li>Τα κουμπιά "Επαναφορά" επαναφέρουν τις αρχικές τιμές.</li>
+          <li>Τα κουμπιά "Επαναφορά" επανέρχονται στις αρχικές τιμές.</li>
           <li>Ο progress bar δείχνει την εξέλιξη της προσομοίωσης.</li>
         </ul>
       `;
-      instructionsDrawer = createDiv(instructionsHTML);
-      instructionsDrawer.addClass('drawer-bottom');
+      instructionsDrawer = document.createElement('div');
+      instructionsDrawer.innerHTML = instructionsHTML;
+      instructionsDrawer.className = "drawer-bottom";
+      document.body.appendChild(instructionsDrawer);
     }
     function toggleInstructionsDrawer() {
-      instructionsDrawer.toggleClass('active');
+      if (instructionsDrawer) {
+        instructionsDrawer.classList.toggle('active');
+      }
     }
   </script>
   
-  <!-- Toggle κουμπί για το κάτω συρτάρι οδηγίας -->
+  <!-- Toggle κουμπί για το κάτω συρτάρι οδηγιών -->
   <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες</button>
   
-  <!-- Ενσωμάτωση p5 για τα drawers -->
-  <script> new p5(); </script>
+  <!-- Εκκίνηση όλων των στοιχείων με p5 -->
+  <script>
+    new p5();
+    window.onload = function() {
+      setupInstructionsDrawer();
+      setup();
+    }
+  </script>
 </body>
 </html>
