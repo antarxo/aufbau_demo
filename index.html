@@ -57,7 +57,7 @@
 </div>
 
 <script>
-// Κλάση Beaker με ενημερωμένο σχεδιασμό και ενσωματωμένες ετικέτες P5.js
+// Κλάση Beaker με ενημερωμένο σχεδιασμό, ενσωματωμένες ετικέτες και μετατόπιση του περιεχομένου
 class Beaker {
   /**
    * @param {object} options
@@ -112,45 +112,50 @@ class Beaker {
       };
       p.draw = () => {
         p.clear();
-        // Υπολογισμός διαστάσεων ελλείψεων:
+        // Ορισμός μετατοπίσεων για το περιεχόμενο:
+        let offsetX = 3;
+        let offsetY = -2; // -2 για 2px προς τα πάνω
+        
+        // Υπολογισμός βασικού πλάτους ελλείψεων:
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
-        let ellipseH = ellipseW * (0.82 / 3.23);
-        let centerX = this.width / 2;
-        // Ορίζουμε το κέντρο της κάτω έλλειψης ως σταθερό:
-        let bottomEllipseCenterY = this.height - ellipseH / 2;
-        // Το πάνω όριο του ορθογωνίου περιεχομένου καθορίζεται όταν το fillLevel = 1:
-        let topBoundary = ellipseH / 2;
+        // Αυξάνουμε το πλάτος κατά 12px:
+        let newEllipseW = ellipseW + 12;
+        let newEllipseH = newEllipseW * (0.82 / 3.23);
+        // Ορίζουμε το κέντρο με τη μετατόπιση:
+        let centerX = this.width / 2 + offsetX;
+        
+        // Ορίζουμε το κάτω κέντρο της κάτω έλλειψης:
+        let bottomEllipseCenterY = this.height - newEllipseH / 2 + offsetY;
+        // Το πάνω όριο του περιεχομένου ορίζεται ως το newEllipseH/2 (με μετατόπιση):
+        let topBoundary = newEllipseH / 2 + offsetY;
         let rectHeight = bottomEllipseCenterY - topBoundary;
         
         // Υπολογισμός του ύψους του γεμίσματος βάσει του fillLevel:
         let liquidFillHeight = rectHeight * this.fillLevel;
-        // Το γεμάτο υγρό ξεκινάει από το κάτω μέρος και ανεβαίνει μέχρι το liquidFillHeight:
         let liquidTop = bottomEllipseCenterY - liquidFillHeight;
         
-        // Τροποποίηση του ορθογωνίου του γεμίσματος:
-        // - Νέο πλάτος: ellipseW + 12
-        // - Μετατόπιση: 3 δεξιότερα (x+3) και 2 ψηλότερα (y-2)
+        // Σχεδιάζουμε το γεμάτο υγρό (ορθογώνιο γεμίσματος):
         p.noStroke();
         p.fill(this.fillColor);
-        p.rect((centerX - ellipseW / 2) + 3, liquidTop - 2, ellipseW + 12, liquidFillHeight);
+        p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
         
         // Σχεδιάζουμε την κάτω έλλειψη (γεμάτη) στο κάτω μέρος του canvas:
         p.fill(this.fillColor);
-        p.ellipse(centerX, bottomEllipseCenterY, ellipseW, ellipseH);
+        p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
         
-        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα, τοποθετώντας το κέντρο της στο liquidTop:
+        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα, ώστε το κέντρο της να βρίσκεται στο liquidTop:
         p.fill(this.fillColor);
         p.stroke(255);
         p.strokeWeight(2);
-        p.ellipse(centerX, liquidTop, ellipseW, ellipseH);
+        p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
         p.noStroke();
-
+        
         // Σχεδιάζουμε το outline πάνω από όλα, αν έχει οριστεί:
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
-
+        
         // Σχεδιάζουμε τις ετικέτες στο κέντρο της εικόνας:
         p.fill(0); // Χρώμα κειμένου: μαύρο
         let spacing = 20; // κάθε ετικέτα με κατακόρυφη απόσταση 20px
@@ -171,7 +176,7 @@ window.addEventListener('DOMContentLoaded', () => {
     containerId: 'beakerContainer',
     width: 400,
     height: 400,
-    // Αν επιθυμείτε άλλες ετικέτες, μπορείτε να τις περάσετε εδώ ως πίνακας:
+    // Αν επιθυμείτε άλλες ετικέτες, μπορείτε να τις περάσετε εδώ ως πίνακα:
     labels: ["P5.js", "P5.js", "P5.js"]
   });
   myBeaker.initP5();
