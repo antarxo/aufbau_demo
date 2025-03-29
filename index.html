@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Ενσωμάτωση Εσωτερικών Περιγραμμάτων</title>
+  <title>Beaker Advanced Example - Χωρίς Μαύρα</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -55,7 +55,7 @@
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα εσωτερικά περιγράμματα
+// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα "εσωτερικά" περιγράμματα χωρίς τα μαύρα
 class Beaker {
   constructor(options) {
     this.containerId = options.containerId;
@@ -107,7 +107,7 @@ class Beaker {
 
       p.draw = () => {
         p.clear();
-        // --- Σχεδίαση του περιεχομένου (υγρό, δύο έλλειψη και ορθογώνιο γεμίσματος) ---
+        // --- Σχεδίαση περιεχομένου (υγρό, δύο έλλειψη και ορθογώνιο γεμίσματος) ---
         let offsetX = 10;
         let offsetY = -1;
         let baseWidth = this.width * 0.7;
@@ -126,55 +126,40 @@ class Beaker {
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
         
-        // Κάτω έλλειψη (γεμάτη με υγρό)
+        // Κάτω έλλειψη (γεμάτη)
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
         
-        // Άνω έλλειψη (με υγρό, όπως και τα υπόλοιπα)
+        // Άνω έλλειψη (γεμάτη με υγρό)
         p.fill(this.fillColor);
         p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
         
-        // Σχεδίαση Outline αν έχει οριστεί (προαιρετικά)
+        // Σχεδίαση Outline (αν έχει οριστεί)
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // --- Σχεδίαση νέας δομής για τον καμβά ετικετών με εσωτερικά περιγράμματα ---
-        // Ορισμός μεταβλητών για τη δομή
+        // --- Σχεδίαση δομής ετικετών χωρίς τα "μαύρα" ---
         let spacing = 20;
         let labelsCount = this.labels.length;
         let labelOverallHeight = labelsCount * spacing + 20;
         let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
         let rectHeightLabel = labelOverallHeight - newEllipseH;
         let rectYLabel = labelTop + newEllipseH/2;
-        
-        // Ορίζουμε χρώμα περιγράμματος για τα εσωτερικά περιγράμματα (εδώ χρησιμοποιούμε το black)
-        let borderColor = 0;
         let borderThickness = 20;
 
-        // Σχεδίαση Κάτω Έλλειψης (πιο χαμηλό z-index)
-        // 1. Εξωτερικό σχήμα με χρώμα περιγράμματος
+        // Κάτω έλλειψη: σχεδιάζεται μόνο το εσωτερικό σχήμα (λευκό)
         p.noStroke();
-        p.fill(borderColor);
-        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW, newEllipseH);
-        // 2. Εσωτερικό σχήμα, inset κατά 20px, με λευκό γέμισμα
         p.fill(255);
         p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - 2*borderThickness, newEllipseH - 2*borderThickness);
 
-        // Σχεδίαση Ορθογωνίου (μεσαίο z-index)
+        // Ορθογώνιο: σχεδιάζεται μόνο το εσωτερικό σχήμα (λευκό) χωρίς στρογγυλεμένες γωνίες
         p.noStroke();
-        p.fill(borderColor);
-        p.rect(centerX - newEllipseW/2, rectYLabel, newEllipseW, rectHeightLabel);
         p.fill(255);
         p.rect(centerX - newEllipseW/2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2*borderThickness, rectHeightLabel - 2*borderThickness);
 
-        // Σχεδίαση Άνω Έλλειψης (επάνω z-index)
-        // Επειδή η πάνω έλλειψη δεν έχει γέμισμα, θα εμφανίζεται ως "κορντέ"
-        p.noStroke();
-        p.fill(borderColor);
-        p.ellipse(centerX, labelTop, newEllipseW, newEllipseH);
-        p.fill(255);
-        p.ellipse(centerX, labelTop, newEllipseW - 2*borderThickness, newEllipseH - 2*borderThickness);
+        // Άνω έλλειψη: σύμφωνα με την απαίτηση δεν έχει γέμισμα, οπότε δεν σχεδιάζεται κάποιο εσωτερικό
+        // (απλώς διατηρούμε το επίπεδο στο σωστό z-index χωρίς περιεχόμενο)
 
         // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
         p.fill(0);
