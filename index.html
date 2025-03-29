@@ -243,17 +243,18 @@
     let currentIndex = 0;
     const dt = 1;
     
-    // Συνάρτηση Runge-Kutta 4ης τάξης
+    // Διορθωμένη συνάρτηση Runge-Kutta 4ης τάξης
     function rk4Step(A, B, k, dt) {
       const f = (A, B) => k * A * B;
-      let k1_A = -f(A, B), k1_B = f(A, B);
-      let A2 = A + k1_A * dt/2, B2 = B + k1_B * dt/2;
-      let k2_A = -f(A2, B2), k2_B = f(A2, B2);
-      let A3 = A + k2_A * dt/2, B3 = B + k2_B * dt/2;
-      let k3_A = -f(A3, B3), k3_B = f(A3, B3);
-      let A4 = A + k3_A * dt, B4 = B + k3_B * dt;
-      let newA = A + (dt/6)*(k1_A+2*k2_A+2*k3_A+k4_A);
-      let newB = B + (dt/6)*(k1_B+2*k2_B+2*k3_B+k4_B);
+      const k1_A = -f(A, B), k1_B = f(A, B);
+      const A2 = A + k1_A * dt / 2, B2 = B + k1_B * dt / 2;
+      const k2_A = -f(A2, B2), k2_B = f(A2, B2);
+      const A3 = A + k2_A * dt / 2, B3 = B + k2_B * dt / 2;
+      const k3_A = -f(A3, B3), k3_B = f(A3, B3);
+      const A4 = A + k3_A * dt, B4 = B + k3_B * dt;
+      const k4_A = -f(A4, B4), k4_B = f(A4, B4);
+      const newA = A + (dt / 6) * (k1_A + 2 * k2_A + 2 * k3_A + k4_A);
+      const newB = B + (dt / 6) * (k1_B + 2 * k2_B + 2 * k3_B + k4_B);
       return { newA, newB, rate: f(A, B) };
     }
     
@@ -375,7 +376,7 @@
   <script>
     let simulationDrawer;
     function setup() {
-      // Χρησιμοποιούμε το setup μία φορά για δημιουργία του δεξιού συρταριού
+      // Δημιουργία του δεξιού συρταριού
       const controlsHTML = `
         <div class="control-group">
           <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
@@ -430,8 +431,8 @@
       const toggleBtn = document.getElementById("toggleInstructionsBtn");
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
-        // Αν ενεργοποιείται, το κουμπί μετακινείται ώστε να ευθυγραμμίζεται με το πάνω μέρος του συρταριού,
-        // αλλιώς επιστρέφει στο κάτω όριο της σελίδας (bottom: 0)
+        // Όταν ενεργοποιείται, το κουμπί μετακινείται ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού,
+        // αλλιώς επιστρέφει στο κάτω όριο της σελίδας.
         if (instructionsDrawer.classList.contains('active')) {
           toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
         } else {
