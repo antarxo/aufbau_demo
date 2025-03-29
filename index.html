@@ -2,38 +2,29 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example</title>
-  <!-- Φόρτωση p5.js -->
+  <title>Beaker Example</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 10px;
       font-family: sans-serif;
       background: #f9f9f9;
+      text-align: center;
+      padding: 20px;
     }
     #controls {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       padding: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
       display: inline-block;
-    }
-    label {
-      margin-right: 5px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
     }
     #beakerContainer {
       position: relative;
       width: 400px;
       height: 400px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: transparent;
-      margin-top: 10px;
+      margin: auto;
     }
-    /* Τα HTML labels που εμφανίζονται πάνω στο beaker */
     .beaker-label {
       position: absolute;
       left: 50%;
@@ -50,50 +41,40 @@
   </style>
 </head>
 <body>
+
 <div id="controls">
-  <h3>Ρυθμίσεις Beaker</h3>
-  <label for="outlineSelect">Επιλογή Περιγράμματος:</label>
+  <label>Περίγραμμα:</label>
   <select id="outlineSelect">
-    <option value="gred.png" selected>Κόκκινο</option>
+    <option value="gred.png">Κόκκινο</option>
     <option value="ggreen.png">Πράσινο</option>
     <option value="gblue.png">Μπλε</option>
   </select>
   <br />
-  <label for="fillColor">Χρώμα Υγρού:</label>
+  <label>Χρώμα Υγρού:</label>
   <input type="color" id="fillColor" value="#0000ff" />
   <br />
-  <label for="fillLevel">Στάθμη Υγρού (0–1):</label>
+  <label>Στάθμη Υγρού:</label>
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
 <div id="beakerContainer">
-  <!-- HTML labels πάνω από το canvas -->
   <div class="beaker-label label1">Label 1</div>
   <div class="beaker-label label2">Label 2</div>
   <div class="beaker-label label3">Label 3</div>
 </div>
 
 <script>
-// Κλάση Beaker με αναβαθμισμένο σχεδιασμό
 class Beaker {
-  /**
-   * @param {object} options
-   *   containerId: id του div που φιλοξενεί το p5 canvas
-   *   width, height: διαστάσεις του canvas
-   */
   constructor(options) {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
-    // Αρχικές ρυθμίσεις υγρού:
-    this.fillColor = "#0000ff"; // αρχικό χρώμα υγρού
-    this.fillLevel = 0.5;       // 50% γεμάτο
-    // Εικόνα περιγράμματος (outline)
+    this.fillColor = "#0000ff";
+    this.fillLevel = 0.5;
     this.outlineImg = null;
     this.p5Instance = null;
   }
 
-  // Θέτει την εικόνα περιγράμματος (outline) από αρχείο (π.χ. "gred.png")
   setOutlineImage(imgPath) {
     if (!this.p5Instance) return;
     let p = this.p5Instance;
@@ -102,72 +83,48 @@ class Beaker {
     });
   }
 
-  // Θέτει το χρώμα του υγρού
   setFillColor(newColor) {
     this.fillColor = newColor;
   }
 
-  // Θέτει τη στάθμη γεμίσματος [0..1]
   setFillLevel(level) {
     this.fillLevel = Math.max(0, Math.min(level, 1));
   }
 
-  // Δημιουργεί το p5 instance μέσα στο container
   initP5() {
     const sketch = (p) => {
       p.setup = () => {
         let cnv = p.createCanvas(this.width, this.height);
-        let container = document.getElementById(this.containerId);
-        cnv.parent(container);
+        cnv.parent(document.getElementById(this.containerId));
         p.clear();
       };
+
       p.draw = () => {
         p.clear();
-        // Ορίζουμε τις διαστάσεις των ελλείψεων:
-        // Βασικό πλάτος (70% του canvas)
         let baseWidth = this.width * 0.7;
-        // Ελλειψη έχει 30px επιπλέον πλάτος:
         let ellipseW = baseWidth + 30;
-        // Αναλογία: 3.23:0.82 για πλάτος:ύψος
         let ellipseH = ellipseW * (0.82 / 3.23);
-        let centerX = this.width / 2;
-        
-        // Η κάτω έλλειψη:
-        // Σχεδιάζεται με κέντρο στο (this.height - ellipseH/2)
+
         let bottomEllipseCenterY = this.height - ellipseH / 2;
-        // Το κάτω της άκρο της έλλειψης:
-        let rectBottom = bottomEllipseCenterY + ellipseH / 2;
-        
-        // Το υγρό γεμίζεται με βάση το fillLevel:
-        let liquidHeight = this.height * this.fillLevel;
-        // Η πάνω έλλειψη πρέπει να έχει κάτω όριο ίσο με το κάτω της άκρο της έλλειψης
-        // Ορίζουμε ότι το πάνω του όριο του ορθογωνίου είναι το κάτω του πάνω έλλειψης.
-        // Αν θεωρήσουμε ότι το πάνω ellipse τοποθετείται έτσι ώστε το κέντρο του να είναι στο:
-        let topEllipseCenterY = (this.height - liquidHeight) + ellipseH / 2;
-        let rectTop = topEllipseCenterY + ellipseH / 2;
-        
-        // Ο οριζόντιος άξονας του ορθογωνίου είναι ίσος με το ellipseW
-        let rectX = centerX - ellipseW / 2;
-        let rectWidth = ellipseW;
-        let rectH = rectBottom - rectTop;
-        
-        // Σχεδιάζουμε το ορθογώνιο (υγρό) με το fillColor:
+        let topEllipseCenterY = (this.height - this.fillLevel * (this.height - 2 * ellipseH)) + ellipseH / 2;
+        let centerX = this.width / 2;
+
+        let rectY = topEllipseCenterY - ellipseH / 2;
+        let rectH = bottomEllipseCenterY - (topEllipseCenterY - ellipseH / 2);
+
         p.noStroke();
         p.fill(this.fillColor);
-        p.rect(rectX, rectTop, rectWidth, rectH);
-        
-        // Σχεδιάζουμε την κάτω έλλειψη (γεμάτη) στο κάτω μέρος του canvas:
+        p.rect(centerX - ellipseW / 2, rectY, ellipseW, rectH);
+
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, ellipseW, ellipseH);
         
-        // Σχεδιάζουμε την πάνω έλλειψη, η οποία είναι γεμάτη και έχει λευκό περίγραμμα:
         p.fill(this.fillColor);
         p.stroke(255);
         p.strokeWeight(2);
         p.ellipse(centerX, topEllipseCenterY, ellipseW, ellipseH);
         p.noStroke();
         
-        // Σχεδιάζουμε το outline πάνω από όλα, αν έχει οριστεί:
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
@@ -177,7 +134,6 @@ class Beaker {
   }
 }
 
-// ----- Χρήση της κλάσης Beaker -----
 let myBeaker;
 window.addEventListener('DOMContentLoaded', () => {
   myBeaker = new Beaker({
@@ -187,7 +143,6 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   myBeaker.initP5();
 
-  // Στοιχεία ελέγχου:
   const outlineSelect = document.getElementById('outlineSelect');
   const fillColorInput = document.getElementById('fillColor');
   const fillLevelRange = document.getElementById('fillLevel');
@@ -202,7 +157,6 @@ window.addEventListener('DOMContentLoaded', () => {
     myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
   });
 
-  // Αρχικές τιμές:
   myBeaker.setOutlineImage(outlineSelect.value);
   myBeaker.setFillColor(fillColorInput.value);
   myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
