@@ -55,7 +55,7 @@
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα "εσωτερικά" περιγράμματα χωρίς τα μαύρα και με την κάτω έλλειψη στις νέες διαστάσεις της
+// Κλάση Beaker με σχεδίαση δομής ετικετών χωρίς εξωτερικά (μαύρα) περιγράμματα και με την κάτω έλλειψη στις νέες διαστάσεις
 class Beaker {
   constructor(options) {
     this.containerId = options.containerId;
@@ -107,7 +107,7 @@ class Beaker {
 
       p.draw = () => {
         p.clear();
-        // --- Σχεδίαση περιεχομένου (υγρό, δύο έλλειψη και ορθογώνιο γεμίσματος) ---
+        // --- Σχεδίαση του περιεχομένου (υγρό, δύο έλλειψη και ορθογώνιο γεμίσματος) ---
         let offsetX = 10;
         let offsetY = -1;
         let baseWidth = this.width * 0.7;
@@ -126,7 +126,7 @@ class Beaker {
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
         
-        // Κάτω έλλειψη (γεμάτη με υγρό)
+        // Κάτω έλλειψη (γεμάτη με υγρό) με νέες διαστάσεις
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
         
@@ -134,21 +134,21 @@ class Beaker {
         p.fill(this.fillColor);
         p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
         
-        // Σχεδίαση Outline (αν έχει οριστεί)
+        // Σχεδίαση Outline αν έχει οριστεί
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // --- Σχεδίαση δομής ετικετών χωρίς τα "μαύρα" ---
+        // --- Σχεδίαση δομής ετικετών χωρίς εξωτερικά περιγράμματα ---
         let spacing = 20;
         let labelsCount = this.labels.length;
         let labelOverallHeight = labelsCount * spacing + 20;
-        let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
+        let labelTop = this.height / 2 - Math.floor(labelsCount / 2) * spacing - 40;
         let rectHeightLabel = labelOverallHeight - newEllipseH;
-        let rectYLabel = labelTop + newEllipseH/2;
+        let rectYLabel = labelTop + newEllipseH / 2;
         let borderThickness = 20;
-
-        // Κάτω έλλειψη: σχεδιάζεται με τις νέες διαστάσεις της και με λευκό γέμισμα
+        
+        // Κάτω έλλειψη: σχεδιάζεται με τις νέες διαστάσεις και με λευκό γέμισμα
         p.noStroke();
         p.fill(255);
         p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW, newEllipseH);
@@ -158,13 +158,12 @@ class Beaker {
         p.fill(255);
         p.rect(centerX - newEllipseW/2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2*borderThickness, rectHeightLabel - 2*borderThickness);
 
-        // Άνω έλλειψη: σύμφωνα με την απαίτηση δεν έχει γέμισμα
-        // (δεν σχεδιάζουμε εσωτερικό γέμισμα για αυτήν την περιοχή)
-
+        // Άνω έλλειψη: σύμφωνα με την απαίτηση δεν έχει γέμισμα (δεν σχεδιάζουμε εσωτερικό γέμισμα)
+        
         // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
         p.fill(0);
         for (let i = 0; i < labelsCount; i++) {
-          let y = this.height/2 + (i - Math.floor(labelsCount/2))*spacing - 40;
+          let y = this.height / 2 + (i - Math.floor(labelsCount / 2)) * spacing - 40;
           p.text(this.labels[i], centerX, y);
         }
       };
