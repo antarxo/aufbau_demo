@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Αυτοκατάλυση με Ελέγχους Ορατότητας</title>
+    <title>Διορθωμένη Αυτοκατάλυση</title>
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
 </head>
 <body>
@@ -12,16 +12,23 @@
         <label>k: <input type="number" id="k" value="0.2" step="0.01"> M⁻¹s⁻¹</label>
         <label>C₀ (Κόκκινη): <input type="number" id="C0_red" value="0.001" step="0.001"> M</label>
         <label>C₀ (Πράσινη): <input type="number" id="C0_green" value="0.1" step="0.01"> M</label>
-        <label>Μέγιστος Χρόνος: <input type="number" id="tMax" value="5000" step="100"> s</label>
+        <label>Μέγιστος Χρόνος: <input type="number" id="tMax" value="500" step="100"> s</label>
         <button onclick="updatePlot()">Ενημέρωση</button>
     </div>
 
     <script>
-        const dt = 0.1;
+        const dt = 1;  // Αυξημένο βήμα χρόνου για μείωση δεδομένων
+
+        // Βοηθητική συνάρτηση για εύρεση μέγιστης τιμής χωρίς spread operator
+        function findMax(arr) {
+            let max = -Infinity;
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] > max) max = arr[i];
+            }
+            return max;
+        }
 
         function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
-            console.log("Προσομοίωση με:", {A0, C0_auto, C0_red, C0_green, k, tMax});
-            
             let A_auto = A0, B_auto = C0_auto;
             let A_red = A0, B_red = C0_red;
             let A_green = A0, B_green = C0_green;
@@ -29,58 +36,54 @@
             const t = [], conc_auto = [], conc_red = [], conc_green = [];
             const rate_auto = [], rate_red = [], rate_green = [];
             
-            try {
-                for(let step=0; step*dt <= tMax; step++) {
-                    // Αυτοκατάλυση
-                    const rateAuto = k * A_auto * B_auto;
-                    A_auto = Math.max(A_auto - rateAuto * dt, 0);
-                    B_auto += rateAuto * dt;
-                    
-                    // Κόκκινη Καμπύλη
-                    const rateRed = k * A_red * B_red;
-                    A_red = Math.max(A_red - rateRed * dt, 0);
-                    B_red += rateRed * dt;
-                    
-                    // Πράσινη Καμπύλη
-                    const rateGreen = k * A_green * B_green;
-                    A_green = Math.max(A_green - rateGreen * dt, 0);
-                    B_green += rateGreen * dt;
-                    
-                    t.push(step*dt);
-                    conc_auto.push(A_auto);
-                    conc_red.push(A_red);
-                    conc_green.push(A_green);
-                    rate_auto.push(rateAuto);
-                    rate_red.push(rateRed);
-                    rate_green.push(rateGreen);
-                }
-            } catch (error) {
-                console.error("Σφάλμα προσομοίωσης:", error);
+            for(let step=0; step*dt <= tMax; step++) {
+                // Αυτοκατάλυση
+                const rateAuto = k * A_auto * B_auto;
+                A_auto = Math.max(A_auto - rateAuto * dt, 0);
+                B_auto += rateAuto * dt;
+                
+                // Κόκκινη
+                const rateRed = k * A_red * B_red;
+                A_red = Math.max(A_red - rateRed * dt, 0);
+                B_red += rateRed * dt;
+                
+                // Πράσινη
+                const rateGreen = k * A_green * B_green;
+                A_green = Math.max(A_green - rateGreen * dt, 0);
+                B_green += rateGreen * dt;
+                
+                t.push(step*dt);
+                conc_auto.push(A_auto);
+                conc_red.push(A_red);
+                conc_green.push(A_green);
+                rate_auto.push(rateAuto);
+                rate_red.push(rateRed);
+                rate_green.push(rateGreen);
             }
-
-            console.log("Δεδομένα αυτοκατάλυσης:", conc_auto.slice(0, 5)); // Debug πρώτων 5 τιμών
-            return {
-                t,
-                conc_auto, conc_red, conc_green,
-                rate_auto, rate_red, rate_green
-            };
+            
+            return { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green };
         }
 
         function updatePlot() {
-            // Προεπιλεγμένες τιμές αν υπάρχει κενή είσοδος
+            // Προεπιλογή για μη έγκυρες τιμές
             const A0 = parseFloat(document.getElementById('A0').value) || 0.1;
             const k = parseFloat(document.getElementById('k').value) || 0.2;
             const C0_red = parseFloat(document.getElementById('C0_red').value) || 0.001;
             const C0_green = parseFloat(document.getElementById('C0_green').value) || 0.1;
-            const tMax = parseFloat(document.getElementById('tMax').value) || 5000;
+            const tMax = parseFloat(document.getElementById('tMax').value) || 500;
             const C0_auto = 1e-9;
             
             const { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green } = 
                 simulate(A0, C0_auto, C0_red, C0_green, k, tMax);
             
-            // Κανονικοποίηση ταχυτήτων
-            const maxRate = Math.max(...rate_auto, ...rate_red, ...rate_green);
-            const normalize = (arr) => arr.map(x => x/maxRate);
+            // Κανονικοποίηση ταχυτήτων με βοηθητική συνάρτηση
+            const maxRate = Math.max(
+                findMax(rate_auto),
+                findMax(rate_red),
+                findMax(rate_green)
+            );
+            
+            const normalize = arr => maxRate > 0 ? arr.map(x => x/maxRate) : arr;
 
             const traces = [
                 { x: t, y: conc_auto, name: 'Αυτοκατάλυση', line: { color: 'blue' } },
@@ -91,10 +94,8 @@
                 { x: t, y: normalize(rate_green), name: 'Ταχύτητα Πράσινης', yaxis: 'y2', line: { color: 'green', dash: 'dot' } }
             ];
 
-            console.log("Trace data:", traces[0]); // Debug πρώτης καμπύλης
-            
             Plotly.react('plot', traces, {
-                title: `Σύγκριση με Μέγιστο Χρόνο ${tMax}s`,
+                title: `Σύγκριση (Μέγ. Χρόνος: ${tMax}s)`,
                 xaxis: { title: 'Χρόνος (s)', range: [0, tMax] },
                 yaxis: { title: '[MnO₄⁻] (M)', range: [0, A0] },
                 yaxis2: {
@@ -107,7 +108,7 @@
             });
         }
 
-        // Αρχική φόρτωση με default τιμές
+        // Αρχική φόρτωση
         updatePlot();
     </script>
 </body>
