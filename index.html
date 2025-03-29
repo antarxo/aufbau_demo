@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Κυλινδρικός Καμβάς Ετικετών</title>
+  <title>Beaker Advanced Example - Δυναμική Δομή Ετικετών</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -52,26 +52,29 @@
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
-<!-- Κύριο instance (μπορείτε να αλλάξετε το μέγεθος του container για δοκιμή) -->
+<!-- Κύριο instance (το περιεχόμενο και οι επιλογές στάθμης παραμένουν αναλλοίωτες) -->
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με δυναμική προσαρμογή στο μέγεθος του container και κυλινδρικό καμβά ετικετών
+// Κλάση Beaker με δυναμική προσαρμογή και νέα δομή για τον καμβά ετικετών
 class Beaker {
   /**
    * @param {object} options
    *   containerId: id του div που φιλοξενεί το p5 canvas
-   *   width, height: αρχικές διαστάσεις του canvas (θα ενημερωθούν δυναμικά)
+   *   width, height: αρχικές διαστάσεις του canvas (ενημερώνονται δυναμικά)
    *   labels: πίνακας ετικετών (προεπιλογή: ["P5.js", "P5.js", "P5.js"])
    */
   constructor(options) {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
+    // Ρυθμίσεις υγρού (χωρίς αλλαγές)
     this.fillColor = "#0000ff";
     this.fillLevel = 0.5;
+    // Εικόνα περιγράμματος (outline)
     this.outlineImg = null;
     this.p5Instance = null;
+    // Ετικέτες που θα εμφανίζονται
     this.labels = options.labels || ["P5.js", "P5.js", "P5.js"];
   }
 
@@ -106,7 +109,6 @@ class Beaker {
         p.clear();
       };
 
-      // Ανανεώνουμε το canvas όταν αλλάζει το μέγεθος του παραθύρου/container
       p.windowResized = () => {
         let container = document.getElementById(this.containerId);
         this.width = container.clientWidth;
@@ -116,11 +118,11 @@ class Beaker {
 
       p.draw = () => {
         p.clear();
-        // Μετατοπίσεις: 10px δεξιότερα και 1px πιο πάνω για όλο το περιεχόμενο
+        // --- Σχεδίαση περιεχομένου (λειτουργεί όπως πριν) ---
         let offsetX = 10;
         let offsetY = -1;
         
-        // --- Υπολογισμοί για το περιεχόμενο του Beaker ---
+        // Υπολογισμοί για το "περιεχόμενο" (υγρό, δύο έλλειψεις και ορθογώνιο γεμίσματος)
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
         let newEllipseW = ellipseW + 12;
@@ -132,12 +134,12 @@ class Beaker {
         let liquidFillHeight = rectHeight * this.fillLevel;
         let liquidTop = bottomEllipseCenterY - liquidFillHeight;
         
-        // Σχεδίαση γεμίσματος (ορθογώνιο)
+        // Σχεδίαση γεμίσματος (ορθογώνιο) - δεν πειράζουμε αυτή τη λειτουργία
         p.noStroke();
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
         
-        // Κάτω έλλειψη
+        // Κάτω έλλειψη (γεμάτη)
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
         
@@ -148,37 +150,45 @@ class Beaker {
         p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
         p.noStroke();
         
-        // Σχεδίαση Outline (αν υπάρχει)
+        // Σχεδίαση Outline αν έχει οριστεί
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // --- Σχεδίαση Καμβά Ετικετών σε κυλινδρική εμφάνιση ---
-        // Ορίζουμε μετατόπιση για τον καμβά ετικετών (40px πιο ψηλά)
-        let labelOffset = -40;
-        let labelCenterX = centerX;
-        let labelBottomEllipseCenterY = bottomEllipseCenterY + labelOffset;
-        let labelTopBoundary = topBoundary + labelOffset;
-        let labelRectHeight = labelBottomEllipseCenterY - labelTopBoundary;
-        
-        // Σχεδίαση του κυλινδρικού φόντου:
-        // 1. Σχεδιάζουμε το ορθογώνιο μέρος
-        p.noStroke();
-        p.fill(255, 230);
-        p.rect(labelCenterX - newEllipseW / 2, labelTopBoundary, newEllipseW, labelRectHeight);
-        // 2. Σχεδιάζουμε την κάτω έλλειψη
-        p.ellipse(labelCenterX, labelBottomEllipseCenterY, newEllipseW, newEllipseH);
-        // 3. "Σβήνουμε" την περιοχή της πάνω έλλειψης για να δώσουμε διάφανη εμφάνιση
-        p.erase();
-        p.ellipse(labelCenterX, labelTopBoundary, newEllipseW, newEllipseH);
-        p.noErase();
-        
-        // --- Σχεδίαση κειμένου ετικετών πάνω από το κυλινδρικό φόντο ---
-        p.fill(0);
+        // --- Σχεδίαση νέας δομής για τον καμβά ετικετών ---
+        // Η νέα δομή θα δίνει την αίσθηση κυλινδρικού δοχείου, με χρώμα λευκό και σταθερό ύψος
+        // Η δομή αποτελείται από: πάνω έλλειψη (χωρίς γέμισμα), ορθογώνιο (χωρίς στρογγυλεμένες γωνίες) και κάτω έλλειψη.
+        // Ο συνολικός "καμβάς ετικετών" κρατούσε ύψος: labelsCount * spacing + 20.
         let spacing = 20;
-        for (let i = 0; i < this.labels.length; i++) {
-          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing + labelOffset;
-          p.text(this.labels[i], labelCenterX, y);
+        let labelsCount = this.labels.length;
+        let labelOverallHeight = labelsCount * spacing + 20;
+        // Ορίζουμε τη θέση της δομής ετικετών με μετατόπιση -40 (όπως πριν)
+        let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
+        // Ορίζουμε το ύψος του ορθογώνιου μέσα στη δομή ως:
+        let rectHeightLabel = labelOverallHeight - newEllipseH;
+        // Η θέση του ορθογώνιου (κάτω της πάνω έλλειψης)
+        let rectYLabel = labelTop + newEllipseH/2;
+        
+        // Σχεδίαση της πάνω έλλειψης: μόνο περίγραμμα (χωρίς γέμισμα)
+        p.noFill();
+        p.stroke(255);
+        p.strokeWeight(2);
+        p.ellipse(centerX, labelTop, newEllipseW, newEllipseH);
+        
+        // Σχεδίαση του ορθογωνίου: λευκό, χωρίς στρογγυλεμένες γωνίες
+        p.noStroke();
+        p.fill(255);
+        p.rect(centerX - newEllipseW/2, rectYLabel, newEllipseW, rectHeightLabel);
+        
+        // Σχεδίαση της κάτω έλλειψης: πλήρες λευκό γέμισμα
+        p.fill(255);
+        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW, newEllipseH);
+        
+        // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
+        p.fill(0);
+        for (let i = 0; i < labelsCount; i++) {
+          let y = this.height/2 + (i - Math.floor(labelsCount/2))*spacing - 40;
+          p.text(this.labels[i], centerX, y);
         }
       };
     };
@@ -187,18 +197,18 @@ class Beaker {
 }
 
 // ----- Χρήση της κλάσης -----
-// Δημιουργούμε το instance στο container "beakerContainer"
+// Η λειτουργία του περιεχομένου και των επιλογών στάθμης παραμένει ίδια, ενώ προστίθεται η νέα δομή για τις ετικέτες
 let myBeaker;
 window.addEventListener('DOMContentLoaded', () => {
   myBeaker = new Beaker({
     containerId: 'beakerContainer',
-    width: 400,   // αρχικές διαστάσεις (θα ενημερωθούν δυναμικά)
+    width: 400,
     height: 400,
     labels: ["P5.js", "P5.js", "P5.js"]
   });
   myBeaker.initP5();
 
-  // Στοιχεία ελέγχου για το κύριο instance:
+  // Στοιχεία ελέγχου για το κύριο instance (χωρίς αλλαγές στη λειτουργικότητα)
   const outlineSelect = document.getElementById('outlineSelect');
   const fillColorInput = document.getElementById('fillColor');
   const fillLevelRange = document.getElementById('fillLevel');
@@ -213,7 +223,6 @@ window.addEventListener('DOMContentLoaded', () => {
     myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
   });
 
-  // Εφαρμογή αρχικών τιμών στο κύριο instance
   myBeaker.setOutlineImage(outlineSelect.value);
   myBeaker.setFillColor(fillColorInput.value);
   myBeaker.setFillLevel(parseFloat(fillLevelRange.value));
