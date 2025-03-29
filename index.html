@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Δυναμική Δομή Ετικετών</title>
+  <title>Beaker Advanced Example - Δομή Ετικετών με Εσωτερικά Περιγράμματα</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -68,7 +68,7 @@ class Beaker {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
-    // Ρυθμίσεις υγρού (χωρίς αλλαγές)
+    // Ρυθμίσεις υγρού (δεν αλλάζουν)
     this.fillColor = "#0000ff";
     this.fillLevel = 0.5;
     // Εικόνα περιγράμματος (outline)
@@ -118,11 +118,9 @@ class Beaker {
 
       p.draw = () => {
         p.clear();
-        // --- Σχεδίαση του περιεχομένου (αμετάβλητη λειτουργία) ---
+        // --- Σχεδίαση περιεχομένου (υγρό, έλλειψεις και ορθογώνιο γεμίσματος) όπως προηγουμένως ---
         let offsetX = 10;
         let offsetY = -1;
-        
-        // Υπολογισμοί για το "περιεχόμενο" (υγρό, δύο έλλειψεις και ορθογώνιο γεμίσματος)
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
         let newEllipseW = ellipseW + 12;
@@ -134,7 +132,7 @@ class Beaker {
         let liquidFillHeight = rectHeight * this.fillLevel;
         let liquidTop = bottomEllipseCenterY - liquidFillHeight;
         
-        // Σχεδίαση γεμίσματος (ορθογώνιο)
+        // Γέμισμα (ορθογώνιο)
         p.noStroke();
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
@@ -156,35 +154,46 @@ class Beaker {
         }
         
         // --- Σχεδίαση νέας δομής για τον καμβά ετικετών ---
-        // Ο υπολογισμός των διαστάσεων βασίζεται στο ίδιο πλάτος με το περιεχόμενο
+        // Υπολογισμοί για τη δομή:
+        // Ο συνολικός "καμβάς ετικετών" έχει ύψος:
         let spacing = 20;
         let labelsCount = this.labels.length;
         let labelOverallHeight = labelsCount * spacing + 20;
-        // Τοποθετούμε τη δομή 40px πιο ψηλά από το κέντρο
+        // Η φυσική θέση της δομής ετικετών (με μετατόπιση -40px)
         let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
-        // Ορίζουμε το ύψος του ορθογώνιου μέσα στη δομή: σταθερό ύψος ίσο με (labelOverallHeight - newEllipseH)
-        let rectHeightLabel = labelOverallHeight - newEllipseH;
-        // Η θέση του ορθογωνίου (κάτω της πάνω έλλειψης)
+        // Ο ορθογώνιος της δομής έχει ύψος σταθερό, ως διαφορά μεταξύ της πάνω και της κάτω έλλειψης
+        // Ορίζουμε τη θέση του ορθογωνίου (κάτω της πάνω έλλειψης)
         let rectYLabel = labelTop + newEllipseH/2;
+        let rectHeightLabel = labelOverallHeight - newEllipseH;
         
-        // Ορισμός περιγράμματος για όλα τα στοιχεία της δομής (stroke 10px, "χωρίς χρώμα" στο fill του περιγράμματος)
-        p.strokeWeight(10);
-        p.stroke(0);
+        // Για το εφέ "εσωτερικού περιγράμματος" (stroke εντός 10px από το φυσικό όριο)
+        // θα σχεδιάζουμε κάθε στοιχείο με μειωμένες διαστάσεις κατά 10px,
+        // ώστε με strokeWeight(10) (που σχεδιάζεται κανονικά κεντρικά) το εξωτερικό μισό να βρίσκεται ακριβώς στο φυσικό όριο.
+        let innerReduction = 10; // συνολική μείωση
+        // Χρώμα περιγράμματος για την ετικέτα (μισοδιαφανές μαύρο)
+        let labelStrokeColor = p.color(0, 0, 0, 128);
         
-        // Σχεδίαση της πάνω έλλειψης: χωρίς γέμισμα (noFill)
+        // Σχεδίαση της πάνω έλλειψης της δομής (χωρίς γέμισμα)
         p.noFill();
-        p.ellipse(centerX, labelTop, newEllipseW, newEllipseH);
+        p.stroke(labelStrokeColor);
+        p.strokeWeight(10);
+        // Για inner stroke: μειώνουμε τις διαστάσεις κατά innerReduction
+        p.ellipse(centerX, labelTop, newEllipseW - innerReduction, newEllipseH - innerReduction);
         
-        // Σχεδίαση του ορθογωνίου: λευκό φόντο, χωρίς στρογγυλεμένες γωνίες
+        // Σχεδίαση του ορθογωνίου της δομής με φόντο λευκό (χωρίς στρογγυλεμένες γωνίες)
         p.fill(255);
-        p.rect(centerX - newEllipseW/2, rectYLabel, newEllipseW, rectHeightLabel);
+        p.stroke(labelStrokeColor);
+        p.strokeWeight(10);
+        // Για να σχεδιαστεί το inner stroke, μετατοπίζουμε το ορθογώνιο κατά 5px (innerReduction/2) από κάθε πλευρά
+        p.rect(centerX - newEllipseW/2 + innerReduction/2, rectYLabel + innerReduction/2, newEllipseW - innerReduction, rectHeightLabel - innerReduction);
         
-        // Σχεδίαση της κάτω έλλειψης: πλήρες λευκό γεμίσμα
+        // Σχεδίαση της κάτω έλλειψης της δομής (γεμάτη λευκό)
         p.fill(255);
-        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW, newEllipseH);
+        p.stroke(labelStrokeColor);
+        p.strokeWeight(10);
+        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - innerReduction, newEllipseH - innerReduction);
         
         // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
-        // Επαναφέρουμε το stroke για το κείμενο (χωρίς περιγράμματα)
         p.noStroke();
         p.fill(0);
         for (let i = 0; i < labelsCount; i++) {
@@ -198,7 +207,7 @@ class Beaker {
 }
 
 // ----- Χρήση της κλάσης -----
-// Το περιεχόμενο και οι επιλογές στάθμης παραμένουν αμετάβλητες, ενώ προστίθεται η δομή για τις ετικέτες
+// Η λειτουργία του περιεχομένου και των επιλογών στάθμης παραμένει αναλλοίωτη, προστίθεται η νέα δομή ετικετών
 let myBeaker;
 window.addEventListener('DOMContentLoaded', () => {
   myBeaker = new Beaker({
