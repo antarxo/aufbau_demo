@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για τα drawers (χρησιμοποιείται εδώ μόνο για το canvas, αλλά για το drawer χρησιμοποιούμε DOM μεθόδους) -->
+  <!-- p5.js για τα drawers (χρησιμοποιείται εδώ για άλλες λειτουργίες) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     html, body {
@@ -55,7 +55,7 @@
     .drawer {
       width: 300px;
       position: fixed;
-      right: -295px; /* 5px από το drawer είναι ορατά */
+      right: -295px; /* Η αριστερή πλευρά του drawer θα είναι 5px πιο μέσα από το δεξί όριο */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -72,7 +72,7 @@
     /* Toggle κουμπί για το δεξί συρτάρι */
     .toggleBtn {
       position: absolute;
-      right: -5px; /* Το κουμπί εξέχει 5px προς τα μέσα */
+      left: -15px; /* Το κουμπί εξέχει 15px μέσα στο drawer, εξασφαλίζοντας 5px επικάλυψη */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
@@ -82,7 +82,7 @@
       cursor: pointer;
       border-radius: 5px;
       font-size: 20px;
-      z-index: 1100;
+      z-index: 1100; /* Υψηλότερο από το drawer */
       transition: background-color 0.3s ease;
     }
     .toggleBtn:hover { background-color: #0056b3; }
@@ -150,7 +150,7 @@
     .drawer-bottom {
       width: 90%;
       position: fixed;
-      bottom: -420px; /* Κρυφό με συνολικό ύψος 420px */
+      bottom: -420px; /* Κρυφό, συνολικό ύψος 420px */
       left: 50%;
       transform: translateX(-50%);
       background-color: #fff;
@@ -168,10 +168,10 @@
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί οδηγιών με ετικέτα "Οδηγίες |||" */
+    /* Toggle κουμπί οδηγιών: αρχικά στο κάτω μέρος με bottom: 5px */
     #toggleInstructionsBtn {
       position: fixed;
-      bottom: 0; 
+      bottom: 5px; 
       left: 50%;
       transform: translate(-50%, 0);
       background-color: #007bff;
@@ -210,7 +210,7 @@
     <div id="errorMsg"></div>
   </div>
   
-  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται από την κλάση Drawer) -->
+  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται μέσω κλάσης Drawer) -->
   <script>
     // Δημιουργούμε το drawer χρησιμοποιώντας DOM μεθόδους
     class Drawer {
@@ -366,7 +366,7 @@
     }
     
     function resetSimulation() {
-      document.getElementById('A₀').value = "0.1";
+      document.getElementById('A0').value = "0.1";
       document.getElementById('k').value = "0.2";
       document.getElementById('C0_red').value = "0.001";
       document.getElementById('C0_green').value = "0.1";
@@ -384,7 +384,7 @@
       const controlsHTML = `
         <div class="control-group">
           <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
-          <input type="number" id="A0" value="0.1" step="0.01" min="0">
+          <input type="number" id="A₀" value="0.1" step="0.01" min="0">
         </div>
         <div class="control-group">
           <label for="k" title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k (M⁻¹s⁻¹):</label>
@@ -436,9 +436,11 @@
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
         if (instructionsDrawer.classList.contains('active')) {
-          toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
+          // Όταν το drawer οδηγιών είναι ανοιχτό, το κουμπί μετακινείται ώστε να έχει bottom: -5px
+          toggleBtn.style.bottom = "-5px";
         } else {
-          toggleBtn.style.bottom = "0px";
+          // Όταν κρυφό, το κουμπί έχει bottom: 5px
+          toggleBtn.style.bottom = "5px";
         }
       }
     }
