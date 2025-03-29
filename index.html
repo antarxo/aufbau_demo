@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για τη δημιουργία του συρταριού -->
+  <!-- p5.js για το drawer -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     body {
@@ -13,20 +13,44 @@
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
     }
-    h1 {
-      text-align: center;
-      margin-top: 10px;
+    /* Overlay τίτλου με σκιές παρόμοιες με το acidebaseF */
+    #pageTitleOverlay {
+      position: fixed;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      z-index: 1200;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
     }
-    /* Το διάγραμμα εμφανίζεται στην κορυφή */
+    #pageTitleOverlay h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: black;
+      letter-spacing: 1px;
+    }
+    #pageTitleOverlay h2 {
+      margin: 0;
+      font-size: 11px;
+      color: #333;
+    }
+    /* Διάγραμμα στην κορυφή */
     #plot {
       width: 90%;
       height: 500px;
-      margin: 20px auto;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      margin: 60px auto 20px auto;
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
       border-radius: 8px;
       background-color: #fff;
     }
-    /* Στυλ για το συρτάρι (βάσει της κλάσης που δόθηκε) */
+    /* Στυλ για το δεξί συρτάρι (μόνο παραμέτροι) */
     .drawer {
       width: 300px;
       position: fixed;
@@ -38,28 +62,30 @@
       box-sizing: border-box;
       transition: right 0.3s ease-in-out;
       border-radius: 10px 0 0 10px;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
       z-index: 1000;
     }
     .drawer.active {
       right: 0;
     }
+    /* Το κουμπί toggle τώρα έχει μικρότερο πλάτος */
     .toggleBtn {
       position: absolute;
-      right: calc(100% - 5px);
+      right: calc(100% - 25px);
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
       color: #fff;
       border: none;
-      padding: 10px 12px;
+      padding: 5px 8px;
       cursor: pointer;
       border-radius: 5px;
-      font-size: 18px;
+      font-size: 16px;
       z-index: 1100;
-      transition: right 0.3s ease-in-out;
+      transition: background-color 0.3s ease;
     }
-    /* Στυλ για τα στοιχεία ελέγχου μέσα στο συρτάρι */
+    .toggleBtn:hover { background-color: #0056b3; }
+    /* Στυλ για τα στοιχεία παραμέτρων μέσα στο drawer */
     .control-group {
       margin-bottom: 10px;
     }
@@ -74,27 +100,29 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    .drawer button {
-      width: 48%;
-      padding: 8px;
-      margin-top: 10px;
+    /* Τα κουμπιά και ο progress bar τοποθετούνται στο κάτω μέρος του γραφήματος */
+    #controls-below {
+      width: 90%;
+      margin: 0 auto 20px auto;
+      text-align: center;
+    }
+    #controls-below button {
+      margin: 0 5px;
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
       border: none;
       border-radius: 4px;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    .drawer .updateBtn {
-      background-color: #28a745;
+      background-color: #007bff;
       color: white;
+      transition: background-color 0.3s ease;
     }
-    .drawer .resetBtn {
-      background-color: #dc3545;
-      color: white;
+    #controls-below button:hover {
+      background-color: #0056b3;
     }
-    /* Στυλ για progress bar μέσα στο συρτάρι */
     #progressContainer {
-      margin-top: 10px;
-      width: 100%;
+      margin: 10px auto;
+      width: 80%;
       background-color: #ddd;
       border-radius: 5px;
       overflow: hidden;
@@ -115,11 +143,27 @@
   </style>
 </head>
 <body>
-  <h1>Διαδραστική Προσομοίωση Αυτοκατάλυσης</h1>
+  <!-- Overlay τίτλου -->
+  <div id="pageTitleOverlay">
+    <h1>Διαδραστική Προσομοίωση Αυτοκατάλυσης</h1>
+    <h2>2025, Created by Antonios Archontoulis, Greece</h2>
+  </div>
+  <!-- Διάγραμμα -->
   <div id="plot"></div>
   
+  <!-- Κουμπιά και Progress bar στο κάτω μέρος του γραφήματος -->
+  <div id="controls-below">
+    <button onclick="updateSimulation()">Ενημέρωση</button>
+    <button onclick="resetSimulation()">Επαναφορά</button>
+    <div id="progressContainer">
+      <div id="progressBarFill">0%</div>
+    </div>
+    <div id="errorMsg"></div>
+  </div>
+  
+  <!-- Το δεξί συρτάρι με τις παραμέτρους -->
   <script>
-    // Κλάση Drawer (σύμφωνα με το αρχείο drawers.html)
+    // Κλάση Drawer (βασισμένη στην αρχική υλοποίηση του drawers.html)
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -128,14 +172,12 @@
         this.content = options.content || '';
         this.buttonLabel = options.buttonLabel || '|||';
     
-        // Δημιουργία του συρταριού με p5.js
         this.drawer = createDiv(this.content);
         this.drawer.addClass('drawer');
         this.drawer.style('top', this.top);
         this.drawer.style('height', this.height);
         this.drawer.style('width', `${this.width}px`);
     
-        // Δημιουργία του κουμπιού toggle
         this.button = createButton(this.buttonLabel);
         this.button.addClass('toggleBtn');
         this.button.parent(this.drawer);
@@ -147,74 +189,54 @@
       }
     }
     
-    // Global variables για την animation της προσομοίωσης
+    // Global μεταβλητές για animation της προσομοίωσης
     let simulationData = null;
     let animationInterval = null;
     let currentIndex = 0;
-    
-    // Χρονικό βήμα προσομοίωσης
     const dt = 1;
     
     // Συνάρτηση Runge-Kutta 4ης τάξης
     function rk4Step(A, B, k, dt) {
       const f = (A, B) => k * A * B;
-      
-      let k1_A = -f(A, B);
-      let k1_B = f(A, B);
-      
-      let A2 = A + k1_A * dt/2;
-      let B2 = B + k1_B * dt/2;
-      let k2_A = -f(A2, B2);
-      let k2_B = f(A2, B2);
-      
-      let A3 = A + k2_A * dt/2;
-      let B3 = B + k2_B * dt/2;
-      let k3_A = -f(A3, B3);
-      let k3_B = f(A3, B3);
-      
-      let A4 = A + k3_A * dt;
-      let B4 = B + k3_B * dt;
-      let k4_A = -f(A4, B4);
-      let k4_B = f(A4, B4);
-      
-      let newA = A + (dt/6) * (k1_A + 2*k2_A + 2*k3_A + k4_A);
-      let newB = B + (dt/6) * (k1_B + 2*k2_B + 2*k3_B + k4_B);
+      let k1_A = -f(A, B), k1_B = f(A, B);
+      let A2 = A + k1_A * dt/2, B2 = B + k1_B * dt/2;
+      let k2_A = -f(A2, B2), k2_B = f(A2, B2);
+      let A3 = A + k2_A * dt/2, B3 = B + k2_B * dt/2;
+      let k3_A = -f(A3, B3), k3_B = f(A3, B3);
+      let A4 = A + k3_A * dt, B4 = B + k3_B * dt;
+      let k4_A = -f(A4, B4), k4_B = f(A4, B4);
+      let newA = A + (dt/6)*(k1_A+2*k2_A+2*k3_A+k4_A);
+      let newB = B + (dt/6)*(k1_B+2*k2_B+2*k3_B+k4_B);
       return { newA, newB, rate: f(A, B) };
     }
     
-    // Βοηθητική συνάρτηση για εύρεση μέγιστης τιμής
     function findMax(arr) {
       return arr.reduce((max, x) => x > max ? x : max, -Infinity);
     }
     
-    // Συνάρτηση προσομοίωσης (δημιουργεί δεδομένα για τα 3 συστήματα)
+    // Υπολογισμός προσομοίωσης (για 3 συστήματα)
     function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
       let A_auto = A0, B_auto = C0_auto;
       let A_red = A0, B_red = C0_red;
       let A_green = A0, B_green = C0_green;
-      
       const t = [], conc_auto = [], conc_red = [], conc_green = [];
       const rate_auto = [], rate_red = [], rate_green = [];
-      
       const totalSteps = Math.floor(tMax/dt);
-      for(let step = 0; step <= totalSteps; step++) {
-        let currentTime = step * dt;
+      for(let step = 0; step <= totalSteps; step++){
+        let currentTime = step*dt;
         t.push(currentTime);
         conc_auto.push(A_auto);
         conc_red.push(A_red);
         conc_green.push(A_green);
-        rate_auto.push(k * A_auto * B_auto);
-        rate_red.push(k * A_red * B_red);
-        rate_green.push(k * A_green * B_green);
-        
+        rate_auto.push(k*A_auto*B_auto);
+        rate_red.push(k*A_red*B_red);
+        rate_green.push(k*A_green*B_green);
         let result_auto = rk4Step(A_auto, B_auto, k, dt);
         A_auto = Math.max(result_auto.newA, 0);
         B_auto = result_auto.newB;
-        
         let result_red = rk4Step(A_red, B_red, k, dt);
         A_red = Math.max(result_red.newA, 0);
         B_red = result_red.newB;
-        
         let result_green = rk4Step(A_green, B_green, k, dt);
         A_green = Math.max(result_green.newA, 0);
         B_green = result_green.newB;
@@ -222,85 +244,69 @@
       return { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green };
     }
     
-    // Ενημέρωση του progress bar
     function updateProgressBar(percentage) {
-      const progressBarFill = document.getElementById('progressBarFill');
-      progressBarFill.style.width = percentage + "%";
-      progressBarFill.innerText = Math.floor(percentage) + "%";
+      const pb = document.getElementById('progressBarFill');
+      pb.style.width = percentage+"%";
+      pb.innerText = Math.floor(percentage)+"%";
     }
     
-    // Ενημέρωση του γραφήματος με υποσύνολα δεδομένων (μέχρι το currentIndex)
     function updateGraph(currentIndex) {
       const { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green } = simulationData;
       const maxRate = Math.max(findMax(rate_auto), findMax(rate_red), findMax(rate_green));
-      const normalize = arr => maxRate > 0 ? arr.map(x => x/maxRate) : arr;
-      
-      const t_subset = t.slice(0, currentIndex);
-      const conc_auto_subset = conc_auto.slice(0, currentIndex);
-      const conc_red_subset = conc_red.slice(0, currentIndex);
-      const conc_green_subset = conc_green.slice(0, currentIndex);
-      const rate_auto_subset = rate_auto.slice(0, currentIndex);
-      const rate_red_subset = rate_red.slice(0, currentIndex);
-      const rate_green_subset = rate_green.slice(0, currentIndex);
-      
+      const normalize = arr => maxRate>0 ? arr.map(x=>x/maxRate) : arr;
+      const t_subset = t.slice(0,currentIndex);
+      const conc_auto_subset = conc_auto.slice(0,currentIndex);
+      const conc_red_subset = conc_red.slice(0,currentIndex);
+      const conc_green_subset = conc_green.slice(0,currentIndex);
+      const rate_auto_subset = rate_auto.slice(0,currentIndex);
+      const rate_red_subset = rate_red.slice(0,currentIndex);
+      const rate_green_subset = rate_green.slice(0,currentIndex);
       const traces = [
-        { x: t_subset, y: conc_auto_subset, name: 'Αυτοκατάλυση (A)', line: { color: 'blue' } },
+        { x: t_subset, y: conc_auto_subset, name: 'Αυτοκατάλυση', line: { color: 'blue' } },
         { x: t_subset, y: normalize(rate_auto_subset), name: 'Ταχύτητα Αυτοκατάλυσης', yaxis: 'y2', line: { color: 'blue', dash: 'dot' } },
-        { x: t_subset, y: conc_red_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_red').value}M) (A)`, line: { color: 'red' } },
+        { x: t_subset, y: conc_red_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_red').value}M)`, line: { color: 'red' } },
         { x: t_subset, y: normalize(rate_red_subset), name: 'Ταχύτητα Κόκκινης', yaxis: 'y2', line: { color: 'red', dash: 'dot' } },
-        { x: t_subset, y: conc_green_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_green').value}M) (A)`, line: { color: 'green' } },
+        { x: t_subset, y: conc_green_subset, name: `Κατάλυση (C₀=${document.getElementById('C0_green').value}M)`, line: { color: 'green' } },
         { x: t_subset, y: normalize(rate_green_subset), name: 'Ταχύτητα Πράσινης', yaxis: 'y2', line: { color: 'green', dash: 'dot' } }
       ];
-      
       const layout = {
         title: `Σύγκριση Αποτελεσμάτων (Μέγ. Χρόνος: ${document.getElementById('tMax').value}s)`,
-        xaxis: { title: 'Χρόνος (s)', range: [0, simulationData.t[simulationData.t.length - 1]] },
-        yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value) * 1.1] },
-        yaxis2: {
-          title: 'Κανονικοποιημένη Ταχύτητα',
-          overlaying: 'y',
-          side: 'right',
-          range: [0, 1.1]
-        },
+        xaxis: { title: 'Χρόνος (s)', range: [0, simulationData.t[simulationData.t.length-1]] },
+        yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value)*1.1] },
+        yaxis2: { title: 'Κανονικοποιημένη Ταχύτητα', overlaying: 'y', side: 'right', range: [0,1.1] },
         legend: { orientation: 'h', x: 0, y: -0.2 },
         margin: { t: 50, b: 80 }
       };
-      
       Plotly.react('plot', traces, layout);
     }
     
-    // Λειτουργία animation: σταδιακή εμφάνιση σημείων
     function animateSimulation() {
-      if (!simulationData) return;
+      if(!simulationData)return;
       currentIndex = 0;
       const totalPoints = simulationData.t.length;
-      if (animationInterval) clearInterval(animationInterval);
-      
-      animationInterval = setInterval(() => {
+      if(animationInterval) clearInterval(animationInterval);
+      animationInterval = setInterval(()=>{
         currentIndex++;
         updateGraph(currentIndex);
         updateProgressBar((currentIndex/totalPoints)*100);
-        if (currentIndex >= totalPoints) {
+        if(currentIndex>=totalPoints){
           clearInterval(animationInterval);
         }
-      }, 30); // κάθε 30 ms προστίθεται ένα σημείο
+      },30);
     }
     
-    // Λειτουργίες ενημέρωσης και επαναφοράς
     function updateSimulation() {
       const A0 = parseFloat(document.getElementById('A0').value);
       const k = parseFloat(document.getElementById('k').value);
       const C0_red = parseFloat(document.getElementById('C0_red').value);
       const C0_green = parseFloat(document.getElementById('C0_green').value);
       const tMax = parseFloat(document.getElementById('tMax').value);
-      
-      if (isNaN(A0) || isNaN(k) || isNaN(C0_red) || isNaN(C0_green) || isNaN(tMax) ||
-          A0 < 0 || k < 0 || C0_red < 0 || C0_green < 0 || tMax <= 0) {
+      if(isNaN(A0)||isNaN(k)||isNaN(C0_red)||isNaN(C0_green)||isNaN(tMax)||
+         A0<0||k<0||C0_red<0||C0_green<0||tMax<=0){
         document.getElementById('errorMsg').innerText = "Παρακαλώ εισάγετε έγκυρες, θετικές τιμές.";
         return;
       }
       document.getElementById('errorMsg').innerText = "";
-      
       const C0_auto = 1e-9;
       simulationData = simulate(A0, C0_auto, C0_red, C0_green, k, tMax);
       animateSimulation();
@@ -316,11 +322,13 @@
       updateProgressBar(0);
       updateSimulation();
     }
-    
-    // Δημιουργία του συρταριού με τα στοιχεία ελέγχου χρησιμοποιώντας την κλάση Drawer
+  </script>
+  
+  <!-- Στοιχεία εισόδου παραμέτρων στο δεξί συρτάρι -->
+  <script>
     let simulationDrawer;
     function setup() {
-      noCanvas(); // Δεν χρειαζόμαστε καμβά
+      noCanvas();
       const controlsHTML = `
         <div class="control-group">
           <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
@@ -342,24 +350,19 @@
           <label for="tMax" title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος (s):</label>
           <input type="number" id="tMax" value="500" step="100" min="1">
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <button class="updateBtn" onclick="updateSimulation()">Ενημέρωση</button>
-          <button class="resetBtn" onclick="resetSimulation()">Επαναφορά</button>
-        </div>
-        <div id="progressContainer">
-          <div id="progressBarFill">0%</div>
-        </div>
-        <div id="errorMsg"></div>
       `;
       simulationDrawer = new Drawer({
         top: '100px',
         height: 'auto',
-        content: controlsHTML
+        content: controlsHTML,
+        buttonLabel: '|||'
       });
-      
-      // Ξεκινάμε την προσομοίωση με τις αρχικές τιμές
+      // Εκκίνηση προσομοίωσης με τις αρχικές τιμές
       updateSimulation();
     }
   </script>
+  
+  <!-- Ενσωμάτωση p5 για το drawer -->
+  <script> new p5(); </script>
 </body>
 </html>
