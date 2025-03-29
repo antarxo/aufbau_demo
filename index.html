@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για τα drawers -->
+  <!-- p5.js για τα drawers (χρησιμοποιούνται εδώ μόνο για το canvas, αλλά για το drawer χρησιμοποιούμε απλές DOM μεθόδους) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     html, body {
@@ -14,7 +14,7 @@
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
     }
-    /* Overlay τίτλου με σκιές όπως στο acidebaseF */
+    /* Overlay τίτλου */
     #pageTitleOverlay {
       position: fixed;
       top: 5px;
@@ -42,7 +42,7 @@
       font-size: 11px;
       color: #333;
     }
-    /* Διάγραμμα με ύψος 450px */
+    /* Διάγραμμα */
     #plot {
       width: 90%;
       height: 450px;
@@ -51,11 +51,11 @@
       border-radius: 8px;
       background-color: #fff;
     }
-    /* Στυλ για το δεξί συρτάρι παραμέτρων */
+    /* Δεξί συρτάρι παραμέτρων */
     .drawer {
       width: 300px;
       position: fixed;
-      right: -260px; /* Κρύβει πλήρως το συρτάρι, αφήνοντας εμφανές μόνο το toggle κουμπί */
+      right: -300px; /* Το drawer είναι πλήρως κρυφό, η αριστερή του πλευρά ακριβώς στο δεξί όριο της οθόνης */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -72,7 +72,7 @@
     /* Toggle κουμπί για το δεξί συρτάρι */
     .toggleBtn {
       position: absolute;
-      left: 100%; /* Τοποθετείται ακριβώς δίπλα στο συρτάρι */
+      left: -40px; /* Το κουμπί "εξέχει" 40px έξω από το drawer, ώστε να είναι ορατό */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
@@ -146,11 +146,11 @@
       text-align: center;
       margin-top: 10px;
     }
-    /* Κάτω συρτάρι οδηγιών: αυξημένο ύψος (+80px) */
+    /* Κάτω συρτάρι οδηγιών */
     .drawer-bottom {
       width: 90%;
       position: fixed;
-      bottom: -420px; /* Κρυφό, με συνολικό ύψος 420px */
+      bottom: -420px; /* Κρυφό με συνολικό ύψος 420px */
       left: 50%;
       transform: translateX(-50%);
       background-color: #fff;
@@ -168,10 +168,10 @@
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί οδηγιών: τοποθετείται στο κάτω όριο της σελίδας ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του drawer */
+    /* Toggle κουμπί οδηγιών με ετικέτα "Οδηγίες |||" */
     #toggleInstructionsBtn {
       position: fixed;
-      bottom: 0; /* Αρχικά στο κάτω όριο της σελίδας */
+      bottom: 0; 
       left: 50%;
       transform: translate(-50%, 0);
       background-color: #007bff;
@@ -210,9 +210,9 @@
     <div id="errorMsg"></div>
   </div>
   
-  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται από τη κλάση Drawer) -->
+  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται από την κλάση Drawer) -->
   <script>
-    // Χρησιμοποιούμε απλές DOM μεθόδους για δημιουργία του συρταριού, αντί για τις p5.js συναρτήσεις.
+    // Δημιουργούμε το drawer χρησιμοποιώντας απλές DOM μεθόδους
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -242,13 +242,13 @@
       }
     }
     
-    // Global μεταβλητές για την animation της προσομοίωσης
+    // Μεταβλητές για την προσομοίωση
     let simulationData = null;
     let animationInterval = null;
     let currentIndex = 0;
     const dt = 1;
     
-    // Συνάρτηση Runge-Kutta 4ης τάξης (διόρθωση του k4_A)
+    // Συνάρτηση Runge-Kutta 4ης τάξης
     function rk4Step(A, B, k, dt) {
       const f = (A, B) => k * A * B;
       const k1_A = -f(A, B), k1_B = f(A, B);
@@ -267,15 +267,15 @@
       return arr.reduce((max, x) => x > max ? x : max, -Infinity);
     }
     
-    // Προσομοίωση για 3 συστήματα
+    // Προσομοίωση για τρία συστήματα
     function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
       let A_auto = A0, B_auto = C0_auto;
       let A_red = A0, B_red = C0_red;
       let A_green = A0, B_green = C0_green;
       const t = [], conc_auto = [], conc_red = [], conc_green = [];
       const rate_auto = [], rate_red = [], rate_green = [];
-      const totalSteps = Math.floor(tMax/dt);
-      for(let step = 0; step <= totalSteps; step++){
+      const totalSteps = Math.floor(tMax / dt);
+      for (let step = 0; step <= totalSteps; step++) {
         let currentTime = step * dt;
         t.push(currentTime);
         conc_auto.push(A_auto);
@@ -436,7 +436,6 @@
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
         if (instructionsDrawer.classList.contains('active')) {
-          // Μετακινεί το κουμπί πάνω, ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού
           toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
         } else {
           toggleBtn.style.bottom = "0px";
@@ -445,7 +444,7 @@
     }
   </script>
   
-  <!-- Toggle κουμπί οδηγιών με την ετικέτα και το σύμβολο "|||" -->
+  <!-- Toggle κουμπί οδηγιών με ετικέτα "Οδηγίες |||" -->
   <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες |||</button>
   
   <!-- Εκκίνηση όλων των στοιχείων -->
