@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Χωρίς Μαύρα</title>
+  <title>Beaker Advanced Example - Κάτω Έλλειψη Πάνω από το Ορθογώνιο</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -55,7 +55,8 @@
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα "εσωτερικά" περιγράμματα χωρίς τα μαύρα
+// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα "εσωτερικά" περιγράμματα χωρίς τα μαύρα,
+// με την κάτω έλλειψη να σχεδιάζεται πάνω από το ορθογώνιο στις νέες διαστάσεις της.
 class Beaker {
   constructor(options) {
     this.containerId = options.containerId;
@@ -143,28 +144,28 @@ class Beaker {
         let spacing = 20;
         let labelsCount = this.labels.length;
         let labelOverallHeight = labelsCount * spacing + 20;
-        let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
+        let labelTop = this.height / 2 - Math.floor(labelsCount / 2) * spacing - 40;
         let rectHeightLabel = labelOverallHeight - newEllipseH;
-        let rectYLabel = labelTop + newEllipseH/2;
+        let rectYLabel = labelTop + newEllipseH / 2;
         let borderThickness = 20;
 
-        // Κάτω έλλειψη: σχεδιάζεται μόνο το εσωτερικό σχήμα (λευκό)
+        // Σχεδίαση του ορθογωνίου (λευκό) χωρίς περιθώριο
         p.noStroke();
         p.fill(255);
-        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - 2*borderThickness, newEllipseH - 2*borderThickness);
+        p.rect(centerX - newEllipseW / 2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2 * borderThickness, rectHeightLabel - 2 * borderThickness);
 
-        // Ορθογώνιο: σχεδιάζεται μόνο το εσωτερικό σχήμα (λευκό) χωρίς στρογγυλεμένες γωνίες
+        // Σχεδίαση της κάτω έλλειψης στις νέες διαστάσεις, πάνω από το ορθογώνιο, με λευκό γέμισμα
         p.noStroke();
         p.fill(255);
-        p.rect(centerX - newEllipseW/2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2*borderThickness, rectHeightLabel - 2*borderThickness);
+        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - 2 * borderThickness, newEllipseH - 2 * borderThickness);
 
-        // Άνω έλλειψη: σύμφωνα με την απαίτηση δεν έχει γέμισμα, οπότε δεν σχεδιάζεται κάποιο εσωτερικό
-        // (απλώς διατηρούμε το επίπεδο στο σωστό z-index χωρίς περιεχόμενο)
-
+        // Η πάνω έλλειψη δεν έχει γέμισμα (σύμφωνα με την απαίτηση)
+        // Δεν σχεδιάζουμε κάποιο εσωτερικό σχήμα για αυτήν.
+        
         // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
         p.fill(0);
         for (let i = 0; i < labelsCount; i++) {
-          let y = this.height/2 + (i - Math.floor(labelsCount/2))*spacing - 40;
+          let y = this.height / 2 + (i - Math.floor(labelsCount / 2)) * spacing - 40;
           p.text(this.labels[i], centerX, y);
         }
       };
