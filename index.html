@@ -57,7 +57,7 @@
 </div>
 
 <script>
-// Κλάση Beaker με ενημερωμένο σχεδιασμό, ενσωματωμένες ετικέτες και μετατόπιση του περιεχομένου 10px δεξιότερα
+// Κλάση Beaker με ενημερωμένο σχεδιασμό, ενσωματωμένες ετικέτες και μετατόπιση του περιεχομένου 10px δεξιότερα και 2px ψηλότερα
 class Beaker {
   /**
    * @param {object} options
@@ -112,8 +112,10 @@ class Beaker {
       };
       p.draw = () => {
         p.clear();
-        // Ορισμός μετατόπισης για όλο το περιεχόμενο: 10px δεξιότερα
+        // Ορισμός μετατοπίσεων: 10px δεξιότερα και 2px ψηλότερα
         let offsetX = 10;
+        let offsetY = -2;
+        
         // Υπολογισμός βασικού πλάτους ελλείψεων:
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
@@ -124,9 +126,9 @@ class Beaker {
         let centerX = this.width / 2 + offsetX;
         
         // Ορίζουμε το κάτω κέντρο της κάτω έλλειψης:
-        let bottomEllipseCenterY = this.height - newEllipseH / 2;
-        // Το πάνω όριο του περιεχομένου ορίζεται ως το newEllipseH/2:
-        let topBoundary = newEllipseH / 2;
+        let bottomEllipseCenterY = this.height - newEllipseH / 2 + offsetY;
+        // Το πάνω όριο του περιεχομένου ορίζεται ως το newEllipseH/2 με offsetY:
+        let topBoundary = newEllipseH / 2 + offsetY;
         let rectHeight = bottomEllipseCenterY - topBoundary;
         
         // Υπολογισμός του ύψους του γεμίσματος βάσει του fillLevel:
@@ -154,11 +156,11 @@ class Beaker {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // Σχεδιάζουμε τις ετικέτες στο κέντρο της εικόνας:
+        // Σχεδιάζουμε τις ετικέτες στο κέντρο της εικόνας, προσθέτοντας το offsetY:
         p.fill(0); // Χρώμα κειμένου: μαύρο
         let spacing = 20; // κάθε ετικέτα με κατακόρυφη απόσταση 20px
         for (let i = 0; i < this.labels.length; i++) {
-          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing;
+          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing + offsetY;
           p.text(this.labels[i], centerX, y);
         }
       };
