@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για τα drawers (χρησιμοποιούνται εδώ μόνο για το canvas, αλλά για το drawer χρησιμοποιούμε απλές DOM μεθόδους) -->
+  <!-- p5.js για τα drawers (χρησιμοποιείται εδώ μόνο για το canvas, αλλά για το drawer χρησιμοποιούμε DOM μεθόδους) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     html, body {
@@ -55,7 +55,7 @@
     .drawer {
       width: 300px;
       position: fixed;
-      right: -300px; /* Το drawer είναι πλήρως κρυφό, η αριστερή του πλευρά ακριβώς στο δεξί όριο της οθόνης */
+      right: -295px; /* 5px από το drawer είναι ορατά */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -72,7 +72,7 @@
     /* Toggle κουμπί για το δεξί συρτάρι */
     .toggleBtn {
       position: absolute;
-      left: -40px; /* Το κουμπί "εξέχει" 40px έξω από το drawer, ώστε να είναι ορατό */
+      right: -5px; /* Το κουμπί εξέχει 5px προς τα μέσα */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
@@ -212,7 +212,7 @@
   
   <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται από την κλάση Drawer) -->
   <script>
-    // Δημιουργούμε το drawer χρησιμοποιώντας απλές DOM μεθόδους
+    // Δημιουργούμε το drawer χρησιμοποιώντας DOM μεθόδους
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -366,7 +366,7 @@
     }
     
     function resetSimulation() {
-      document.getElementById('A0').value = "0.1";
+      document.getElementById('A₀').value = "0.1";
       document.getElementById('k').value = "0.2";
       document.getElementById('C0_red').value = "0.001";
       document.getElementById('C0_green').value = "0.1";
