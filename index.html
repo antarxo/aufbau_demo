@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Δομή Ετικετών με Εσωτερικά Περιγράμματα (20px)</title>
+  <title>Beaker Advanced Example - Ενσωμάτωση Εσωτερικών Περιγραμμάτων</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -52,23 +52,15 @@
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
-<!-- Κύριο instance (περιεχόμενο και επιλογές στάθμης) -->
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με δυναμική προσαρμογή και δομή ετικετών με "εσωτερικά" περιγράμματα 20px
+// Κλάση Beaker με προσαρμοσμένη σχεδίαση για τα εσωτερικά περιγράμματα
 class Beaker {
-  /**
-   * @param {object} options
-   *   containerId: id του div που φιλοξενεί το p5 canvas
-   *   width, height: αρχικές διαστάσεις του canvas (ενημερώνονται δυναμικά)
-   *   labels: πίνακας ετικετών (προεπιλογή: ["P5.js", "P5.js", "P5.js"])
-   */
   constructor(options) {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
-    // Ρυθμίσεις υγρού (δεν αλλάζουν)
     this.fillColor = "#0000ff";
     this.fillLevel = 0.5;
     this.outlineImg = null;
@@ -115,7 +107,7 @@ class Beaker {
 
       p.draw = () => {
         p.clear();
-        // --- Σχεδίαση περιεχομένου (υγρό, έλλειψεις και ορθογώνιο γεμίσματος) όπως προηγουμένως ---
+        // --- Σχεδίαση του περιεχομένου (υγρό, δύο έλλειψη και ορθογώνιο γεμίσματος) ---
         let offsetX = 10;
         let offsetY = -1;
         let baseWidth = this.width * 0.7;
@@ -129,79 +121,65 @@ class Beaker {
         let liquidFillHeight = rectHeight * this.fillLevel;
         let liquidTop = bottomEllipseCenterY - liquidFillHeight;
         
-        // Γέμισμα (ορθογώνιο)
+        // Σχεδίαση γεμίσματος (ορθογώνιο)
         p.noStroke();
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
-        // Κάτω έλλειψη (γεμάτη)
+        
+        // Κάτω έλλειψη (γεμάτη με υγρό)
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
-        // Άνω έλλειψη (με λευκό περίγραμμα)
-        p.fill(this.fillColor);
-        p.stroke(255);
-        p.strokeWeight(2);
-        p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
-        p.noStroke();
         
+        // Άνω έλλειψη (με υγρό, όπως και τα υπόλοιπα)
+        p.fill(this.fillColor);
+        p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
+        
+        // Σχεδίαση Outline αν έχει οριστεί (προαιρετικά)
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // --- Σχεδίαση δομής ετικετών με εσωτερικό περίγραμμα 20px ---
-        // Ο "καμβάς ετικετών" τοποθετείται 40px πιο ψηλά από το κέντρο
+        // --- Σχεδίαση νέας δομής για τον καμβά ετικετών με εσωτερικά περιγράμματα ---
+        // Ορισμός μεταβλητών για τη δομή
         let spacing = 20;
         let labelsCount = this.labels.length;
         let labelOverallHeight = labelsCount * spacing + 20;
-        let labelTop = this.height / 2 - Math.floor(labelsCount / 2) * spacing - 40;
-        // Ο ορθογώνιος της δομής θα έχει ύψος ως τη διαφορά μεταξύ της πάνω και της κάτω έλλειψης
-        let rectYLabel = labelTop + newEllipseH / 2;
+        let labelTop = this.height/2 - Math.floor(labelsCount/2)*spacing - 40;
         let rectHeightLabel = labelOverallHeight - newEllipseH;
+        let rectYLabel = labelTop + newEllipseH/2;
         
-        // Ορισμός τιμών για το "εσωτερικό" περίγραμμα: 20px πάχος, δηλαδή 20px από κάθε πλευρά (συνολικά 40px μείωση)
+        // Ορίζουμε χρώμα περιγράμματος για τα εσωτερικά περιγράμματα (εδώ χρησιμοποιούμε το black)
+        let borderColor = 0;
         let borderThickness = 20;
-        
-        // Ορίζουμε το χρώμα για το περίγραμμα
-        let labelBorderColor = p.color(0, 0, 0, 128);
-        
-        // Για κάθε στοιχείο, αντί για stroke, σχεδιάζουμε δύο σχηματικές παραλλαγές:
-        // 1. Το εξωτερικό σχήμα (πλήρες) σε χρώμα labelBorderColor.
-        // 2. Το εσωτερικό σχήμα (μικρότερο κατά 2*borderThickness) με το "τέλος" του σχεδίου (για πάνω έλλειψη: background, για ορθογώνιο & κάτω έλλειψη: λευκό).
-        // Χρώματα εσωτερικών γεμισμάτων:
-        //   - Πάνω έλλειψη: χρώμα φόντου (container, #f9f9f9) για να μοιάζει χωρίς γέμισμα.
-        //   - Ορθογώνιο & Κάτω έλλειψη: λευκό.
-        let bgColor = '#f9f9f9';
-        let innerFill = 255;
-        
-        // --- Πάνω έλλειψη της δομής ---
-        // Εξωτερικό: χωρίς γέμισμα, μόνο ο "περίγραμμα" που θα φανεί μέσα.
+
+        // Σχεδίαση Κάτω Έλλειψης (πιο χαμηλό z-index)
+        // 1. Εξωτερικό σχήμα με χρώμα περιγράμματος
         p.noStroke();
-        p.fill(labelBorderColor);
-        p.ellipse(centerX, labelTop, newEllipseW, newEllipseH);
-        // Εσωτερικό: μικρότερη έλλειψη με διαστάσεις μειωμένες κατά 2*borderThickness, γεμισμένη με το χρώμα του φόντου ώστε να φαίνεται ως "άδεια"
-        p.fill(bgColor);
-        p.ellipse(centerX, labelTop, newEllipseW - 2 * borderThickness, newEllipseH - 2 * borderThickness);
-        
-        // --- Ορθογώνιο της δομής ---
-        // Εξωτερικό ορθογώνιο (για το εσωτερικό περίγραμμα)
-        p.fill(labelBorderColor);
-        p.rect(centerX - newEllipseW / 2, rectYLabel, newEllipseW, rectHeightLabel);
-        // Εσωτερικό ορθογώνιο: γεμίζει λευκά, χωρίς στρογγυλεμένες γωνίες, με μείωση 2*borderThickness
-        p.fill(innerFill);
-        p.rect(centerX - newEllipseW / 2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2 * borderThickness, rectHeightLabel - 2 * borderThickness);
-        
-        // --- Κάτω έλλειψη της δομής ---
-        // Εξωτερικό: γεμάτη με labelBorderColor
-        p.fill(labelBorderColor);
+        p.fill(borderColor);
         p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW, newEllipseH);
-        // Εσωτερικό: γεμάτη λευκό, με μείωση 2*borderThickness
-        p.fill(innerFill);
-        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - 2 * borderThickness, newEllipseH - 2 * borderThickness);
-        
-        // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
+        // 2. Εσωτερικό σχήμα, inset κατά 20px, με λευκό γέμισμα
+        p.fill(255);
+        p.ellipse(centerX, rectYLabel + rectHeightLabel, newEllipseW - 2*borderThickness, newEllipseH - 2*borderThickness);
+
+        // Σχεδίαση Ορθογωνίου (μεσαίο z-index)
         p.noStroke();
+        p.fill(borderColor);
+        p.rect(centerX - newEllipseW/2, rectYLabel, newEllipseW, rectHeightLabel);
+        p.fill(255);
+        p.rect(centerX - newEllipseW/2 + borderThickness, rectYLabel + borderThickness, newEllipseW - 2*borderThickness, rectHeightLabel - 2*borderThickness);
+
+        // Σχεδίαση Άνω Έλλειψης (επάνω z-index)
+        // Επειδή η πάνω έλλειψη δεν έχει γέμισμα, θα εμφανίζεται ως "κορντέ"
+        p.noStroke();
+        p.fill(borderColor);
+        p.ellipse(centerX, labelTop, newEllipseW, newEllipseH);
+        p.fill(255);
+        p.ellipse(centerX, labelTop, newEllipseW - 2*borderThickness, newEllipseH - 2*borderThickness);
+
+        // --- Σχεδίαση κειμένου ετικετών πάνω από τη δομή ---
         p.fill(0);
         for (let i = 0; i < labelsCount; i++) {
-          let y = this.height / 2 + (i - Math.floor(labelsCount / 2)) * spacing - 40;
+          let y = this.height/2 + (i - Math.floor(labelsCount/2))*spacing - 40;
           p.text(this.labels[i], centerX, y);
         }
       };
@@ -210,6 +188,7 @@ class Beaker {
   }
 }
 
+// Χρήση της κλάσης
 let myBeaker;
 window.addEventListener('DOMContentLoaded', () => {
   myBeaker = new Beaker({
