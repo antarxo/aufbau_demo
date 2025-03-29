@@ -72,7 +72,7 @@
     /* Toggle κουμπί στο δεξί drawer */
     .toggleBtn {
       position: absolute;
-      left: -10px; /* Μετακινούμε 10px πιο κοντά στο drawer */
+      left: -30px; /* Μετακινούμε το κουμπί 30px προς τα έξω */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
@@ -435,7 +435,8 @@
       const toggleBtn = document.getElementById("toggleInstructionsBtn");
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
-        // Όταν το drawer οδηγιών είναι ανοιχτό, το κουμπί εμφανίζεται "κολλημένο" στο πάνω του όριο.
+        // Όταν το drawer οδηγιών είναι ανοιχτό, το κουμπί παραμένει "κολλημένο" στο πάνω του όριο,
+        // διαφορετικά παραμένει στο bottom: 0px.
         if (instructionsDrawer.classList.contains('active')) {
           toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
         } else {
