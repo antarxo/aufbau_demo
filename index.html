@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Δυναμική Προσαρμογή Μεγέθους</title>
+  <title>Beaker Advanced Example - Κυλινδρικός Καμβάς Ετικετών</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -56,7 +56,7 @@
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
 
 <script>
-// Κλάση Beaker με δυναμική προσαρμογή στο μέγεθος του container
+// Κλάση Beaker με δυναμική προσαρμογή στο μέγεθος του container και κυλινδρικό καμβά ετικετών
 class Beaker {
   /**
    * @param {object} options
@@ -94,7 +94,7 @@ class Beaker {
   initP5() {
     const sketch = (p) => {
       p.setup = () => {
-        // Διαβάζουμε τις τρέχουσες διαστάσεις του container
+        // Ανάγνωση τρεχουσών διαστάσεων του container
         let container = document.getElementById(this.containerId);
         this.width = container.clientWidth;
         this.height = container.clientHeight;
@@ -106,7 +106,7 @@ class Beaker {
         p.clear();
       };
 
-      // Κάθε φορά που αλλάζει το μέγεθος του παραθύρου, ενημερώνουμε το canvas
+      // Ανανεώνουμε το canvas όταν αλλάζει το μέγεθος του παραθύρου/container
       p.windowResized = () => {
         let container = document.getElementById(this.containerId);
         this.width = container.clientWidth;
@@ -120,7 +120,7 @@ class Beaker {
         let offsetX = 10;
         let offsetY = -1;
         
-        // Υπολογισμοί για τις ελλείψεις και το ορθογώνιο, σε σχέση με το τρέχον canvas
+        // --- Υπολογισμοί για το περιεχόμενο του Beaker ---
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
         let newEllipseW = ellipseW + 12;
@@ -153,27 +153,32 @@ class Beaker {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // --- Σχεδίαση Καμβά Ετικετών ---
-        let spacing = 20;
-        let labelsCount = this.labels.length;
-        let topLabelY = this.height / 2 - Math.floor(labelsCount / 2) * spacing;
-        let labelYOffset = -40; // 40px πιο ψηλά από την τωρινή θέση
-        let adjustedTopY = topLabelY + labelYOffset;
-        let labelBoxPadding = 10;
-        let labelBoxWidth = newEllipseW + 20;
-        let labelBoxHeight = labelsCount * spacing + 20;
-        let labelBoxX = centerX - labelBoxWidth / 2;
-        let labelBoxY = adjustedTopY - labelBoxPadding;
-        // Σχεδίαση φόντου ετικετών: λευκό με 90% opacity και στρογγυλεμένες γωνίες
+        // --- Σχεδίαση Καμβά Ετικετών σε κυλινδρική εμφάνιση ---
+        // Ορίζουμε μετατόπιση για τον καμβά ετικετών (40px πιο ψηλά)
+        let labelOffset = -40;
+        let labelCenterX = centerX;
+        let labelBottomEllipseCenterY = bottomEllipseCenterY + labelOffset;
+        let labelTopBoundary = topBoundary + labelOffset;
+        let labelRectHeight = labelBottomEllipseCenterY - labelTopBoundary;
+        
+        // Σχεδίαση του κυλινδρικού φόντου:
+        // 1. Σχεδιάζουμε το ορθογώνιο μέρος
         p.noStroke();
         p.fill(255, 230);
-        p.rect(labelBoxX, labelBoxY, labelBoxWidth, labelBoxHeight, 10);
+        p.rect(labelCenterX - newEllipseW / 2, labelTopBoundary, newEllipseW, labelRectHeight);
+        // 2. Σχεδιάζουμε την κάτω έλλειψη
+        p.ellipse(labelCenterX, labelBottomEllipseCenterY, newEllipseW, newEllipseH);
+        // 3. "Σβήνουμε" την περιοχή της πάνω έλλειψης για να δώσουμε διάφανη εμφάνιση
+        p.erase();
+        p.ellipse(labelCenterX, labelTopBoundary, newEllipseW, newEllipseH);
+        p.noErase();
         
-        // Σχεδίαση κειμένου ετικετών
+        // --- Σχεδίαση κειμένου ετικετών πάνω από το κυλινδρικό φόντο ---
         p.fill(0);
-        for (let i = 0; i < labelsCount; i++) {
-          let y = this.height / 2 + (i - Math.floor(labelsCount / 2)) * spacing + labelYOffset;
-          p.text(this.labels[i], centerX, y);
+        let spacing = 20;
+        for (let i = 0; i < this.labels.length; i++) {
+          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing + labelOffset;
+          p.text(this.labels[i], labelCenterX, y);
         }
       };
     };
