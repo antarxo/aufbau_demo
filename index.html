@@ -2,7 +2,8 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8">
-  <title>Βελτιωμένη Προσομοίωση Αυτοκατάλυσης</title>
+  <title>Βελτιωμένη Αυτοκατάλυση</title>
+  <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
   <style>
     body {
@@ -14,19 +15,20 @@
       text-align: center;
     }
     .container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-gap: 20px;
-      background: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      background-color: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
     .input-group {
+      flex: 1 1 200px;
       display: flex;
       flex-direction: column;
-      margin-bottom: 10px;
     }
     .input-group label {
       margin-bottom: 5px;
@@ -42,175 +44,264 @@
       margin-top: 10px;
     }
     button {
-      padding: 10px 15px;
-      margin: 5px;
+      margin: 0 5px;
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
       border: none;
       border-radius: 4px;
-      background-color: #007BFF;
+      background-color: #007bff;
       color: white;
-      cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
     }
-    #plot {
-      width: 100%;
-      height: 500px;
+    #progressContainer {
+      margin: 20px auto;
+      width: 80%;
     }
-    .tooltip {
-      font-size: 0.9em;
-      color: #666;
+    #progressBar {
+      width: 100%;
+      background-color: #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    #progressBarFill {
+      height: 20px;
+      width: 0%;
+      background-color: #28a745;
+      text-align: center;
+      line-height: 20px;
+      color: white;
+    }
+    #errorMsg {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <h1>Προσομοίωση Αυτοκατάλυσης με RK4</h1>
   <div class="container">
+    <!-- Ομαδοποιημένα πεδία εισόδου με tooltips -->
     <div class="input-group">
-      <label for="A0" title="Αρχική συγκέντρωση του MnO₄⁻ (M)">A₀:</label>
-      <input type="number" id="A0" value="0.1" step="0.01">
+      <label title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
+      <input type="number" id="A0" value="0.1" step="0.01" min="0">
     </div>
     <div class="input-group">
-      <label for="k" title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k:</label>
-      <input type="number" id="k" value="0.2" step="0.01">
+      <label title="Σταθερά ταχύτητας (M⁻¹s⁻¹)">k (M⁻¹s⁻¹):</label>
+      <input type="number" id="k" value="0.2" step="0.01" min="0">
     </div>
     <div class="input-group">
-      <label for="C0_red" title="Αρχική συγκέντρωση καταλύτη για την κόκκινη διαδικασία (M)">C₀ (Κόκκινη):</label>
-      <input type="number" id="C0_red" value="0.001" step="0.001">
+      <label title="Αρχική συγκέντρωση καταλύτη για την 'κόκκινη' αντίδραση (M)">C₀ (Κόκκινη) (M):</label>
+      <input type="number" id="C0_red" value="0.001" step="0.001" min="0">
     </div>
     <div class="input-group">
-      <label for="C0_green" title="Αρχική συγκέντρωση καταλύτη για την πράσινη διαδικασία (M)">C₀ (Πράσινη):</label>
-      <input type="number" id="C0_green" value="0.1" step="0.01">
+      <label title="Αρχική συγκέντρωση καταλύτη για την 'πράσινη' αντίδραση (M)">C₀ (Πράσινη) (M):</label>
+      <input type="number" id="C0_green" value="0.1" step="0.01" min="0">
     </div>
     <div class="input-group">
-      <label for="tMax" title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος:</label>
-      <input type="number" id="tMax" value="500" step="100">
-    </div>
-    <div class="input-group">
-      <label for="dt" title="Βήμα χρόνου (s)">Βήμα Χρόνου (dt):</label>
-      <input type="number" id="dt" value="1" step="0.1">
-    </div>
-    <div class="buttons" style="grid-column: span 2;">
-      <button onclick="updatePlot()">Ενημέρωση Προσομοίωσης</button>
-      <button onclick="resetFields()">Επαναφορά</button>
+      <label title="Μέγιστος χρόνος προσομοίωσης (s)">Μέγιστος Χρόνος (s):</label>
+      <input type="number" id="tMax" value="500" step="100" min="1">
     </div>
   </div>
-  <div id="plot"></div>
+  
+  <div class="buttons">
+    <button onclick="updatePlot()">Ενημέρωση</button>
+    <button onclick="resetInputs()">Επαναφορά</button>
+  </div>
+  
+  <!-- Progress bar -->
+  <div id="progressContainer">
+    <div id="progressBar">
+      <div id="progressBarFill">0%</div>
+    </div>
+  </div>
+  
+  <!-- Περιοχή για το διάγραμμα -->
+  <div id="plot" style="width: 90%; height: 500px; margin: auto;"></div>
+  
+  <!-- Μήνυμα σφάλματος -->
+  <div id="errorMsg"></div>
   
   <script>
-    // Αρχικές τιμές για επαναφορά
-    const defaults = {
-      A0: 0.1,
-      k: 0.2,
-      C0_red: 0.001,
-      C0_green: 0.1,
-      tMax: 500,
-      dt: 1
-    };
+    const dt = 1;  // βήμα χρόνου (s)
 
-    // Συνάρτηση επαναφοράς τιμών εισόδου
-    function resetFields() {
-      document.getElementById('A0').value = defaults.A0;
-      document.getElementById('k').value = defaults.k;
-      document.getElementById('C0_red').value = defaults.C0_red;
-      document.getElementById('C0_green').value = defaults.C0_green;
-      document.getElementById('tMax').value = defaults.tMax;
-      document.getElementById('dt').value = defaults.dt;
-      updatePlot();
+    // Συνάρτηση για εμφάνιση μηνύματος σφάλματος
+    function showError(message) {
+      document.getElementById('errorMsg').innerText = message;
     }
 
-    // Συνάρτηση υπολογισμού με τη μέθοδο Runge-Kutta 4ης τάξης για το σύστημα:
-    // dA/dt = -k*A*B, dB/dt = k*A*B.
-    function simulateRK4(A0, B0, k, tMax, dt) {
-      let A = A0, B = B0;
-      const tArr = [], AArr = [], rateArr = [];
-      const steps = Math.floor(tMax/dt);
+    // Επαναφορά μηνύματος σφάλματος
+    function clearError() {
+      document.getElementById('errorMsg').innerText = "";
+    }
+
+    // Συνάρτηση Runge-Kutta 4ης τάξης για μία ενιαία χρονική ενημέρωση
+    function rk4Step(A, B, k, dt) {
+      // Ορισμός της συνάρτησης ρυθμού
+      const f = (A, B) => k * A * B;
       
-      for(let i=0; i<=steps; i++){
-        let t = i*dt;
-        tArr.push(t);
-        AArr.push(A);
-        rateArr.push(k * A * B);
-
-        // Ορισμός της συνάρτησης παραγώγου
-        const f = (A_val, B_val) => -k * A_val * B_val;
-        const g = (A_val, B_val) => k * A_val * B_val;
-
-        // RK4 υπολογισμοί για A και B
-        const k1_A = dt * f(A, B);
-        const k1_B = dt * g(A, B);
-
-        const k2_A = dt * f(A + k1_A/2, B + k1_B/2);
-        const k2_B = dt * g(A + k1_A/2, B + k1_B/2);
-
-        const k3_A = dt * f(A + k2_A/2, B + k2_B/2);
-        const k3_B = dt * g(A + k2_A/2, B + k2_B/2);
-
-        const k4_A = dt * f(A + k3_A, B + k3_B);
-        const k4_B = dt * g(A + k3_A, B + k3_B);
-
-        A += (k1_A + 2*k2_A + 2*k3_A + k4_A)/6;
-        B += (k1_B + 2*k2_B + 2*k3_B + k4_B)/6;
-
-        // Εξασφάλιση μη αρνητικών τιμών
-        A = Math.max(A, 0);
+      let k1_A = -f(A, B);
+      let k1_B = f(A, B);
+      
+      let A2 = A + k1_A * dt/2;
+      let B2 = B + k1_B * dt/2;
+      let k2_A = -f(A2, B2);
+      let k2_B = f(A2, B2);
+      
+      let A3 = A + k2_A * dt/2;
+      let B3 = B + k2_B * dt/2;
+      let k3_A = -f(A3, B3);
+      let k3_B = f(A3, B3);
+      
+      let A4 = A + k3_A * dt;
+      let B4 = B + k3_B * dt;
+      let k4_A = -f(A4, B4);
+      let k4_B = f(A4, B4);
+      
+      let newA = A + (dt/6) * (k1_A + 2*k2_A + 2*k3_A + k4_A);
+      let newB = B + (dt/6) * (k1_B + 2*k2_B + 2*k3_B + k4_B);
+      // Επιστροφή και της τιμής του ρυθμού (με βάση το αρχικό σημείο)
+      return { newA, newB, rate: f(A, B) };
+    }
+    
+    // Βοηθητική συνάρτηση για εύρεση μέγιστης τιμής
+    function findMax(arr) {
+      let max = -Infinity;
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i] > max) max = arr[i];
+      }
+      return max;
+    }
+    
+    // Συνάρτηση προσομοίωσης χρησιμοποιώντας τη μέθοδο RK4
+    function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
+      // Καταστάσεις για κάθε σύστημα
+      let A_auto = A0, B_auto = C0_auto;
+      let A_red = A0, B_red = C0_red;
+      let A_green = A0, B_green = C0_green;
+      
+      const t = [], conc_auto = [], conc_red = [], conc_green = [];
+      const rate_auto = [], rate_red = [], rate_green = [];
+      
+      const totalSteps = Math.floor(tMax/dt);
+      
+      // Επαναφορά progress bar
+      updateProgressBar(0);
+      
+      for(let step = 0; step <= totalSteps; step++) {
+        let currentTime = step * dt;
+        
+        // Αποθήκευση τιμών
+        t.push(currentTime);
+        conc_auto.push(A_auto);
+        conc_red.push(A_red);
+        conc_green.push(A_green);
+        // Καταγραφή ρυθμού από το αρχικό σημείο (πριν την ενημέρωση)
+        rate_auto.push(k * A_auto * B_auto);
+        rate_red.push(k * A_red * B_red);
+        rate_green.push(k * A_green * B_green);
+        
+        // Ενημέρωση με τη μέθοδο RK4 για κάθε σύστημα
+        let result_auto = rk4Step(A_auto, B_auto, k, dt);
+        A_auto = Math.max(result_auto.newA, 0);
+        B_auto = result_auto.newB;
+        
+        let result_red = rk4Step(A_red, B_red, k, dt);
+        A_red = Math.max(result_red.newA, 0);
+        B_red = result_red.newB;
+        
+        let result_green = rk4Step(A_green, B_green, k, dt);
+        A_green = Math.max(result_green.newA, 0);
+        B_green = result_green.newB;
+        
+        // Ενημέρωση progress bar
+        updateProgressBar((step/totalSteps)*100);
       }
       
-      return { t: tArr, A: AArr, rate: rateArr };
+      // Οριστικοποίηση progress bar
+      updateProgressBar(100);
+      
+      return { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green };
     }
-
-    // Συνάρτηση ενημέρωσης διαγράμματος
+    
+    // Συνάρτηση ενημέρωσης progress bar
+    function updateProgressBar(percentage) {
+      const progressBarFill = document.getElementById('progressBarFill');
+      progressBarFill.style.width = percentage + "%";
+      progressBarFill.innerText = Math.floor(percentage) + "%";
+    }
+    
+    // Κύρια συνάρτηση για ενημέρωση του διαγράμματος
     function updatePlot() {
-      // Λήψη και έλεγχος τιμών
-      const A0 = parseFloat(document.getElementById('A0').value) || defaults.A0;
-      const k = parseFloat(document.getElementById('k').value) || defaults.k;
-      const C0_red = parseFloat(document.getElementById('C0_red').value) || defaults.C0_red;
-      const C0_green = parseFloat(document.getElementById('C0_green').value) || defaults.C0_green;
-      const tMax = parseFloat(document.getElementById('tMax').value) || defaults.tMax;
-      const dt = parseFloat(document.getElementById('dt').value) || defaults.dt;
-      const C0_auto = 1e-9;  // Ελάχιστη τιμή για την αυτοκατάλυση
-
-      // Εκτέλεση προσομοιώσεων με τη μέθοδο RK4
-      const auto = simulateRK4(A0, C0_auto, k, tMax, dt);
-      const red  = simulateRK4(A0, C0_red, k, tMax, dt);
-      const green = simulateRK4(A0, C0_green, k, tMax, dt);
-
-      // Κανονικοποίηση των ταχυτήτων για το y2
-      function findMax(arr) {
-        let max = -Infinity;
-        for (let val of arr) {
-          if (val > max) max = val;
-        }
-        return max;
+      clearError();
+      // Ανάγνωση και έλεγχος τιμών εισόδου
+      const A0 = parseFloat(document.getElementById('A0').value);
+      const k = parseFloat(document.getElementById('k').value);
+      const C0_red = parseFloat(document.getElementById('C0_red').value);
+      const C0_green = parseFloat(document.getElementById('C0_green').value);
+      const tMax = parseFloat(document.getElementById('tMax').value);
+      
+      if (isNaN(A0) || isNaN(k) || isNaN(C0_red) || isNaN(C0_green) || isNaN(tMax) ||
+          A0 < 0 || k < 0 || C0_red < 0 || C0_green < 0 || tMax <= 0) {
+        showError("Παρακαλώ εισάγετε έγκυρες, θετικές τιμές.");
+        return;
       }
-      const maxRate = Math.max(findMax(auto.rate), findMax(red.rate), findMax(green.rate));
+      
+      // Σχετικά με το σύστημα της αυτοκατάλυσης, ο αρχικός καταλύτης είναι πολύ μικρός:
+      const C0_auto = 1e-9;
+      
+      // Εκτέλεση προσομοίωσης
+      const { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green } = 
+        simulate(A0, C0_auto, C0_red, C0_green, k, tMax);
+      
+      // Κανονικοποίηση των ταχυτήτων για το διάγραμμα
+      const maxRate = Math.max(findMax(rate_auto), findMax(rate_red), findMax(rate_green));
       const normalize = arr => maxRate > 0 ? arr.map(x => x/maxRate) : arr;
-
+      
+      // Ορισμός των ίχνων για το Plotly
       const traces = [
-        { x: auto.t, y: auto.A, name: 'Αυτοκατάλυση', line: { color: 'blue' } },
-        { x: auto.t, y: normalize(auto.rate), name: 'Ταχύτητα Αυτοκατάλυσης', yaxis: 'y2', line: { color: 'blue', dash: 'dot' } },
-        { x: red.t, y: red.A, name: `Κατάλυση (C₀=${C0_red} M)`, line: { color: 'red' } },
-        { x: red.t, y: normalize(red.rate), name: 'Ταχύτητα Κόκκινη', yaxis: 'y2', line: { color: 'red', dash: 'dot' } },
-        { x: green.t, y: green.A, name: `Κατάλυση (C₀=${C0_green} M)`, line: { color: 'green' } },
-        { x: green.t, y: normalize(green.rate), name: 'Ταχύτητα Πράσινη', yaxis: 'y2', line: { color: 'green', dash: 'dot' } }
+        { x: t, y: conc_auto, name: 'Αυτοκατάλυση (A)', line: { color: 'blue' } },
+        { x: t, y: normalize(rate_auto), name: 'Ταχύτητα Αυτοκατάλυσης', yaxis: 'y2', line: { color: 'blue', dash: 'dot' } },
+        { x: t, y: conc_red, name: `Κατάλυση (C₀=${C0_red}M) (A)`, line: { color: 'red' } },
+        { x: t, y: normalize(rate_red), name: 'Ταχύτητα Κόκκινης', yaxis: 'y2', line: { color: 'red', dash: 'dot' } },
+        { x: t, y: conc_green, name: `Κατάλυση (C₀=${C0_green}M) (A)`, line: { color: 'green' } },
+        { x: t, y: normalize(rate_green), name: 'Ταχύτητα Πράσινης', yaxis: 'y2', line: { color: 'green', dash: 'dot' } }
       ];
-
-      Plotly.react('plot', traces, {
-        title: `Σύγκριση Προσομοιώσεων (t_max: ${tMax}s, dt: ${dt}s)`,
+      
+      // Διαμόρφωση διαγράμματος με βελτιωμένη εμφάνιση
+      const layout = {
+        title: `Σύγκριση Αποτελεσμάτων (Μέγ. Χρόνος: ${tMax}s)`,
         xaxis: { title: 'Χρόνος (s)', range: [0, tMax] },
-        yaxis: { title: '[MnO₄⁻] (M)', range: [0, A0] },
+        yaxis: { title: '[MnO₄⁻] (M)', range: [0, A0*1.1] },
         yaxis2: {
           title: 'Κανονικοποιημένη Ταχύτητα',
           overlaying: 'y',
           side: 'right',
           range: [0, 1.1]
         },
-        legend: { orientation: 'h', x: 0, y: -0.2 }
-      });
+        legend: { orientation: 'h', x: 0, y: -0.2 },
+        margin: { t: 50, b: 80 }
+      };
+      
+      Plotly.react('plot', traces, layout);
     }
-
-    // Αρχική φόρτωση
-    updatePlot();
+    
+    // Συνάρτηση επαναφοράς τιμών εισόδου στα προεπιλεγμένα
+    function resetInputs() {
+      document.getElementById('A0').value = "0.1";
+      document.getElementById('k').value = "0.2";
+      document.getElementById('C0_red').value = "0.001";
+      document.getElementById('C0_green').value = "0.1";
+      document.getElementById('tMax').value = "500";
+      clearError();
+      updateProgressBar(0);
+    }
+    
+    // Αρχική φόρτωση του διαγράμματος
+    window.onload = updatePlot;
   </script>
 </body>
 </html>
