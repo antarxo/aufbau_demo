@@ -57,7 +57,7 @@
 </div>
 
 <script>
-// Κλάση Beaker με ενημερωμένο σχεδιασμό, ενσωματωμένες ετικέτες και μετατόπιση του περιεχομένου 5px δεξιότερα
+// Κλάση Beaker με ενημερωμένο σχεδιασμό, ενσωματωμένες ετικέτες και μετατόπιση του περιεχομένου 10px δεξιότερα
 class Beaker {
   /**
    * @param {object} options
@@ -112,10 +112,8 @@ class Beaker {
       };
       p.draw = () => {
         p.clear();
-        // Μετατόπιση για όλο το περιεχόμενο: 5px δεξιότερα
-        let offsetX = 5;
-        let offsetY = 0;
-        
+        // Ορισμός μετατόπισης για όλο το περιεχόμενο: 10px δεξιότερα
+        let offsetX = 10;
         // Υπολογισμός βασικού πλάτους ελλείψεων:
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
@@ -126,9 +124,9 @@ class Beaker {
         let centerX = this.width / 2 + offsetX;
         
         // Ορίζουμε το κάτω κέντρο της κάτω έλλειψης:
-        let bottomEllipseCenterY = this.height - newEllipseH / 2 + offsetY;
-        // Το πάνω όριο του περιεχομένου ορίζεται ως το newEllipseH/2 (με μετατόπιση):
-        let topBoundary = newEllipseH / 2 + offsetY;
+        let bottomEllipseCenterY = this.height - newEllipseH / 2;
+        // Το πάνω όριο του περιεχομένου ορίζεται ως το newEllipseH/2:
+        let topBoundary = newEllipseH / 2;
         let rectHeight = bottomEllipseCenterY - topBoundary;
         
         // Υπολογισμός του ύψους του γεμίσματος βάσει του fillLevel:
