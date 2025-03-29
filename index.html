@@ -72,7 +72,7 @@
     /* Toggle κουμπί στο δεξί drawer */
     .toggleBtn {
       position: absolute;
-      left: -20px; /* Εξέχει 20px προς τα μέσα */
+      left: -10px; /* Μετακινούμε 10px πιο κοντά στο drawer */
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
@@ -168,7 +168,7 @@
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί οδηγιών: αρχικά ορίζεται με bottom: 0px και μετακινείται μαζί με το drawer όταν αυτό ανοίγει */
+    /* Toggle κουμπί οδηγιών: αρχικά στο bottom: 0px και μετακινείται μαζί με το drawer */
     #toggleInstructionsBtn {
       position: fixed;
       bottom: 0; 
@@ -328,7 +328,7 @@
         yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value) * 1.1] },
         yaxis2: { title: 'Κανονικοποιημένη Ταχύτητα', overlaying: 'y', side: 'right', range: [0, 1.1] },
         legend: { orientation: 'h', x: 0, y: -0.2 },
-        margin: { t: 50, b: 80, r: 50 } // Αυξημένο δεξί περιθώριο για επέκταση του άξονα Χ
+        margin: { t: 50, b: 80, r: 90 } // Δεξιός περιθώριος 90px
       };
       Plotly.react('plot', traces, layout);
     }
@@ -435,8 +435,12 @@
       const toggleBtn = document.getElementById("toggleInstructionsBtn");
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
-        // Το κουμπί οδηγιών μετακινείται μαζί με το drawer οδηγιών (αφήνεται πάντα στο bottom: 0px)
-        toggleBtn.style.bottom = "0px";
+        // Όταν το drawer οδηγιών είναι ανοιχτό, το κουμπί εμφανίζεται "κολλημένο" στο πάνω του όριο.
+        if (instructionsDrawer.classList.contains('active')) {
+          toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
+        } else {
+          toggleBtn.style.bottom = "0px";
+        }
       }
     }
   </script>
