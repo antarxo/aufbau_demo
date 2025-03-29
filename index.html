@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Multiple Instances</title>
+  <title>Beaker Advanced Example - Ενημερωμένη</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -24,14 +24,18 @@
     label {
       margin-right: 5px;
     }
-    .beakerContainer {
-      position: relative;
+    /* Container για τις διαφορετικές εμφανίσεις */
+    #beakerInstances {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 10px;
+    }
+    .beakerWrapper {
       border: 1px solid #ccc;
       border-radius: 8px;
       background: transparent;
-      margin-top: 10px;
-      display: inline-block;
-      margin-right: 10px;
+      padding: 5px;
     }
   </style>
 </head>
@@ -52,36 +56,37 @@
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
-<!-- Τρία containers για 3 instances -->
-<div id="beakerContainer1" class="beakerContainer" style="width: 320px; height: 320px;"></div>
-<div id="beakerContainer2" class="beakerContainer" style="width: 240px; height: 240px;"></div>
-<div id="beakerContainer3" class="beakerContainer" style="width: 160px; height: 160px;"></div>
+<!-- Container για τα 3 instances -->
+<div id="beakerInstances">
+  <div class="beakerWrapper" id="beaker80"></div>
+  <div class="beakerWrapper" id="beaker60"></div>
+  <div class="beakerWrapper" id="beaker40"></div>
+</div>
 
 <script>
-// Κλάση Beaker με ενσωματωμένες ετικέτες (λευκές με 90% opacity) και μετατόπιση του περιεχομένου
-// (Όλο το περιεχόμενο έχει μετατοπιστεί 10px δεξιότερα και 1px ψηλότερα)
+// Κλάση Beaker με τις ζητούμενες αλλαγές
 class Beaker {
   /**
    * @param {object} options
    *   containerId: id του div που φιλοξενεί το p5 canvas
    *   width, height: διαστάσεις του canvas
-   *   labels: πίνακας ετικετών που θα εμφανίζονται στο κέντρο (προεπιλογή: ["P5.js", "P5.js", "P5.js"])
+   *   labels: πίνακας ετικετών που θα εμφανίζονται
    */
   constructor(options) {
     this.containerId = options.containerId;
-    this.width = options.width;
-    this.height = options.height;
+    this.width = options.width || 300;
+    this.height = options.height || 300;
     // Ρυθμίσεις υγρού:
-    this.fillColor = "#0000ff"; // αρχικό χρώμα υγρού
-    this.fillLevel = 0.5;       // 50% γεμάτο
+    this.fillColor = "#0000ff";
+    this.fillLevel = 0.5;
     // Εικόνα περιγράμματος (outline)
     this.outlineImg = null;
     this.p5Instance = null;
-    // Ετικέτες που θα εμφανίζονται στο canvas (λευκές, 90% opacity)
+    // Ετικέτες
     this.labels = options.labels || ["P5.js", "P5.js", "P5.js"];
   }
 
-  // Θέτει την εικόνα περιγράμματος (outline) από αρχείο (π.χ. "gred.png")
+  // Θέτει την εικόνα περιγράμματος από αρχείο
   setOutlineImage(imgPath) {
     if (!this.p5Instance) return;
     let p = this.p5Instance;
@@ -114,9 +119,10 @@ class Beaker {
       };
       p.draw = () => {
         p.clear();
-        // Μετατόπιση ολόκληρου του περιεχομένου: 10px δεξιότερα και 1px ψηλότερα
+        // Ορισμός μετατόπισης οριζόντιας για όλο το περιεχόμενο:
         let offsetX = 10;
-        let offsetY = -1;
+        // Ομαλή μετατόπιση 1px προς τα πάνω για τα στοιχεία (εκτός του outline)
+        let yAdjustment = -1;
         
         // Υπολογισμός βασικού πλάτους ελλείψεων:
         let baseWidth = this.width * 0.7;
@@ -124,46 +130,55 @@ class Beaker {
         // Αυξάνουμε το πλάτος κατά 12px:
         let newEllipseW = ellipseW + 12;
         let newEllipseH = newEllipseW * (0.82 / 3.23);
-        // Ορίζουμε το κέντρο με τη μετατόπιση:
         let centerX = this.width / 2 + offsetX;
         
-        // Ορίζουμε το κάτω κέντρο της κάτω έλλειψης:
-        let bottomEllipseCenterY = this.height - newEllipseH / 2 + offsetY;
-        // Το πάνω όριο του περιεχομένου:
-        let topBoundary = newEllipseH / 2 + offsetY;
+        // Υπολογισμός θέσεων με μετατόπιση:
+        let bottomEllipseCenterY = this.height - newEllipseH / 2 + yAdjustment;
+        let topBoundary = newEllipseH / 2 + yAdjustment;
         let rectHeight = bottomEllipseCenterY - topBoundary;
         
-        // Υπολογισμός του ύψους του γεμίσματος βάσει του fillLevel:
+        // Υπολογισμός ύψους γεμίσματος:
         let liquidFillHeight = rectHeight * this.fillLevel;
-        let liquidTop = bottomEllipseCenterY - liquidFillHeight;
+        let liquidTop = bottomEllipseCenterY - liquidFillHeight + yAdjustment;
         
-        // Σχεδιάζουμε το γεμάτο υγρό (ορθογώνιο γεμίσματος):
+        // Σχεδίαση ορθογωνίου γεμίσματος:
         p.noStroke();
         p.fill(this.fillColor);
         p.rect(centerX - newEllipseW / 2, liquidTop, newEllipseW, liquidFillHeight);
         
-        // Σχεδιάζουμε την κάτω έλλειψη (γεμάτη) στο κάτω μέρος του canvas:
+        // Σχεδίαση κάτω έλλειψης:
         p.fill(this.fillColor);
         p.ellipse(centerX, bottomEllipseCenterY, newEllipseW, newEllipseH);
         
-        // Σχεδιάζουμε την πάνω έλλειψη με λευκό περίγραμμα, ώστε το κέντρο της να βρίσκεται στο liquidTop:
+        // Σχεδίαση πάνω έλλειψης:
         p.fill(this.fillColor);
         p.stroke(255);
         p.strokeWeight(2);
         p.ellipse(centerX, liquidTop, newEllipseW, newEllipseH);
         p.noStroke();
         
-        // Σχεδιάζουμε το outline πάνω από όλα, αν έχει οριστεί:
+        // Σχεδίαση του outline πάνω από όλα, χωρίς μετατόπιση:
         if (this.outlineImg) {
           p.image(this.outlineImg, 0, 0, this.width, this.height);
         }
         
-        // Σχεδιάζουμε τις ετικέτες στο κέντρο της εικόνας (λευκές με opacity 90%)
-        p.fill(255, 255, 255, 230); // 230/255 ≈ 90%
-        let spacing = 20; // κάθε ετικέτα με κατακόρυφη απόσταση 20px
+        // Σχεδίαση ετικετών στο κέντρο με white background (opacity 90%), 40px ψηλότερα και μικρότερο διάστιχο
+        let spacing = 10; // μειωμένο διάστιχο
         for (let i = 0; i < this.labels.length; i++) {
-          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing;
-          p.text(this.labels[i], centerX, y);
+          // Υπολογισμός θέσης: μετατόπιση 40px προς τα πάνω από το κέντρο
+          let y = this.height / 2 + (i - Math.floor(this.labels.length / 2)) * spacing - 40;
+          let txt = this.labels[i];
+          // Μέτρηση κειμένου για το φόντο (προσθέτουμε padding)
+          let txtWidth = p.textWidth(txt) + 10;
+          // Προσέγγιση ύψους κειμένου με τις συναρτήσεις του p5
+          let txtHeight = p.textAscent() + p.textDescent();
+          // Σχεδίαση λευκού παρασκηνιακού ορθογωνίου με 90% opacity
+          p.fill(255, 255, 255, 230);
+          p.noStroke();
+          p.rect(centerX - txtWidth / 2, y - txtHeight / 2, txtWidth, txtHeight);
+          // Σχεδίαση κειμένου πάνω από το φόντο
+          p.fill(0);
+          p.text(txt, centerX, y);
         }
       };
     };
@@ -171,68 +186,53 @@ class Beaker {
   }
 }
 
-// ----- Δημιουργία 3 instances με 80%, 60% και 40% του μεγέθους της τρέχουσας (400px ως βάση) -----
-window.addEventListener('DOMContentLoaded', () => {
-  // Ελεγχος στοιχείων ελέγχου
-  const outlineSelect = document.getElementById('outlineSelect');
-  const fillColorInput = document.getElementById('fillColor');
-  const fillLevelRange = document.getElementById('fillLevel');
-
-  // Δημιουργούμε 3 instances:
-  // 80% του μεγέθους: 320px x 320px
-  let beaker1 = new Beaker({
-    containerId: 'beakerContainer1',
-    width: 320,
-    height: 320,
-    labels: ["P5.js", "P5.js", "P5.js"]
-  });
-  beaker1.initP5();
-  beaker1.setOutlineImage(outlineSelect.value);
-  beaker1.setFillColor(fillColorInput.value);
-  beaker1.setFillLevel(parseFloat(fillLevelRange.value));
-
-  // 60% του μεγέθους: 240px x 240px
-  let beaker2 = new Beaker({
-    containerId: 'beakerContainer2',
-    width: 240,
-    height: 240,
-    labels: ["P5.js", "P5.js", "P5.js"]
-  });
-  beaker2.initP5();
-  beaker2.setOutlineImage(outlineSelect.value);
-  beaker2.setFillColor(fillColorInput.value);
-  beaker2.setFillLevel(parseFloat(fillLevelRange.value));
-
-  // 40% του μεγέθους: 160px x 160px
-  let beaker3 = new Beaker({
-    containerId: 'beakerContainer3',
-    width: 160,
-    height: 160,
-    labels: ["P5.js", "P5.js", "P5.js"]
-  });
-  beaker3.initP5();
-  beaker3.setOutlineImage(outlineSelect.value);
-  beaker3.setFillColor(fillColorInput.value);
-  beaker3.setFillLevel(parseFloat(fillLevelRange.value));
-
-  // Ανανεώνουμε τα instances όταν αλλάζουν τα στοιχεία ελέγχου:
-  outlineSelect.addEventListener('change', () => {
-    beaker1.setOutlineImage(outlineSelect.value);
-    beaker2.setOutlineImage(outlineSelect.value);
-    beaker3.setOutlineImage(outlineSelect.value);
-  });
-  fillColorInput.addEventListener('input', () => {
-    beaker1.setFillColor(fillColorInput.value);
-    beaker2.setFillColor(fillColorInput.value);
-    beaker3.setFillColor(fillColorInput.value);
-  });
-  fillLevelRange.addEventListener('input', () => {
-    let level = parseFloat(fillLevelRange.value);
-    beaker1.setFillLevel(level);
-    beaker2.setFillLevel(level);
-    beaker3.setFillLevel(level);
-  });
+// ----- Χρήση της κλάσης Beaker για τα 3 instances -----
+// Instance με 80% του αρχικού μεγέθους (400x400 -> 320x320)
+let beaker80 = new Beaker({
+  containerId: 'beaker80',
+  width: 320,
+  height: 320,
+  labels: ["P5.js", "P5.js", "P5.js"]
 });
+beaker80.initP5();
+
+// Instance με 60% του αρχικού μεγέθους (400x400 -> 240x240)
+let beaker60 = new Beaker({
+  containerId: 'beaker60',
+  width: 240,
+  height: 240,
+  labels: ["P5.js", "P5.js", "P5.js"]
+});
+beaker60.initP5();
+
+// Instance με 40% του αρχικού μεγέθους (400x400 -> 160x160)
+let beaker40 = new Beaker({
+  containerId: 'beaker40',
+  width: 160,
+  height: 160,
+  labels: ["P5.js", "P5.js", "P5.js"]
+});
+beaker40.initP5();
+
+// Στοιχεία ελέγχου (επικοινωνούν μόνο με το instance 80 για παράδειγμα)
+const outlineSelect = document.getElementById('outlineSelect');
+const fillColorInput = document.getElementById('fillColor');
+const fillLevelRange = document.getElementById('fillLevel');
+
+outlineSelect.addEventListener('change', () => {
+  beaker80.setOutlineImage(outlineSelect.value);
+});
+fillColorInput.addEventListener('input', () => {
+  beaker80.setFillColor(fillColorInput.value);
+});
+fillLevelRange.addEventListener('input', () => {
+  beaker80.setFillLevel(parseFloat(fillLevelRange.value));
+});
+
+// Αρχικές τιμές για το instance 80:
+beaker80.setOutlineImage(outlineSelect.value);
+beaker80.setFillColor(fillColorInput.value);
+beaker80.setFillLevel(parseFloat(fillLevelRange.value));
 </script>
 </body>
 </html>
