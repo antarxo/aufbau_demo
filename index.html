@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
-  <title>Beaker Advanced Example - Αναθεωρημένο</title>
+  <title>Beaker Advanced Example - Δυναμική Προσαρμογή Μεγέθους</title>
   <!-- Φόρτωση p5.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -52,33 +52,26 @@
   <input type="range" id="fillLevel" min="0" max="1" step="0.01" value="0.5" />
 </div>
 
-<!-- Κύριο instance 400x400 -->
+<!-- Κύριο instance (μπορείτε να αλλάξετε το μέγεθος του container για δοκιμή) -->
 <div id="beakerContainer" class="beakerContainer" style="width:400px; height:400px;"></div>
-<!-- Instances με 80%, 60%, 40% του μεγέθους -->
-<div id="beakerContainer80" class="beakerContainer" style="width:320px; height:320px;"></div>
-<div id="beakerContainer60" class="beakerContainer" style="width:240px; height:240px;"></div>
-<div id="beakerContainer40" class="beakerContainer" style="width:160px; height:160px;"></div>
 
 <script>
-// Κλάση Beaker με ενημερωμένο σχεδιασμό
+// Κλάση Beaker με δυναμική προσαρμογή στο μέγεθος του container
 class Beaker {
   /**
    * @param {object} options
    *   containerId: id του div που φιλοξενεί το p5 canvas
-   *   width, height: διαστάσεις του canvas
-   *   labels: πίνακας ετικετών που θα εμφανίζονται (προεπιλογή: ["P5.js", "P5.js", "P5.js"])
+   *   width, height: αρχικές διαστάσεις του canvas (θα ενημερωθούν δυναμικά)
+   *   labels: πίνακας ετικετών (προεπιλογή: ["P5.js", "P5.js", "P5.js"])
    */
   constructor(options) {
     this.containerId = options.containerId;
     this.width = options.width || 300;
     this.height = options.height || 300;
-    // Ρυθμίσεις υγρού:
     this.fillColor = "#0000ff";
     this.fillLevel = 0.5;
-    // Εικόνα περιγράμματος (outline)
     this.outlineImg = null;
     this.p5Instance = null;
-    // Ετικέτες που θα εμφανίζονται στο canvas
     this.labels = options.labels || ["P5.js", "P5.js", "P5.js"];
   }
 
@@ -101,21 +94,33 @@ class Beaker {
   initP5() {
     const sketch = (p) => {
       p.setup = () => {
-        let cnv = p.createCanvas(this.width, this.height);
+        // Διαβάζουμε τις τρέχουσες διαστάσεις του container
         let container = document.getElementById(this.containerId);
+        this.width = container.clientWidth;
+        this.height = container.clientHeight;
+        let cnv = p.createCanvas(this.width, this.height);
         cnv.parent(container);
         p.textFont('sans-serif');
         p.textSize(16);
         p.textAlign(p.CENTER, p.CENTER);
         p.clear();
       };
+
+      // Κάθε φορά που αλλάζει το μέγεθος του παραθύρου, ενημερώνουμε το canvas
+      p.windowResized = () => {
+        let container = document.getElementById(this.containerId);
+        this.width = container.clientWidth;
+        this.height = container.clientHeight;
+        p.resizeCanvas(this.width, this.height);
+      };
+
       p.draw = () => {
         p.clear();
         // Μετατοπίσεις: 10px δεξιότερα και 1px πιο πάνω για όλο το περιεχόμενο
         let offsetX = 10;
         let offsetY = -1;
         
-        // Υπολογισμοί για τις ελλείψεις και το ορθογώνιο
+        // Υπολογισμοί για τις ελλείψεις και το ορθογώνιο, σε σχέση με το τρέχον canvas
         let baseWidth = this.width * 0.7;
         let ellipseW = baseWidth + 30;
         let newEllipseW = ellipseW + 12;
@@ -149,13 +154,11 @@ class Beaker {
         }
         
         // --- Σχεδίαση Καμβά Ετικετών ---
-        // Υπολογισμός βασικής θέσης ετικετών: κέντρο + μετατόπιση, με επιπλέον ανύψωση 40px
         let spacing = 20;
         let labelsCount = this.labels.length;
         let topLabelY = this.height / 2 - Math.floor(labelsCount / 2) * spacing;
         let labelYOffset = -40; // 40px πιο ψηλά από την τωρινή θέση
         let adjustedTopY = topLabelY + labelYOffset;
-        // Ορισμός διαστάσεων του "καμβά" ετικετών με padding 10px
         let labelBoxPadding = 10;
         let labelBoxWidth = newEllipseW + 20;
         let labelBoxHeight = labelsCount * spacing + 20;
@@ -166,7 +169,7 @@ class Beaker {
         p.fill(255, 230);
         p.rect(labelBoxX, labelBoxY, labelBoxWidth, labelBoxHeight, 10);
         
-        // Σχεδίαση κειμένου (χωρίς δικό τους φόντο)
+        // Σχεδίαση κειμένου ετικετών
         p.fill(0);
         for (let i = 0; i < labelsCount; i++) {
           let y = this.height / 2 + (i - Math.floor(labelsCount / 2)) * spacing + labelYOffset;
@@ -178,38 +181,17 @@ class Beaker {
   }
 }
 
-// ----- Δημιουργία Instances -----
-// Κύριο instance 400x400
+// ----- Χρήση της κλάσης -----
+// Δημιουργούμε το instance στο container "beakerContainer"
 let myBeaker;
 window.addEventListener('DOMContentLoaded', () => {
-  // Instance για το κύριο container
   myBeaker = new Beaker({
     containerId: 'beakerContainer',
-    width: 400,
+    width: 400,   // αρχικές διαστάσεις (θα ενημερωθούν δυναμικά)
     height: 400,
     labels: ["P5.js", "P5.js", "P5.js"]
   });
   myBeaker.initP5();
-
-  // Δημιουργία επιπλέον instances με 80%, 60%, 40% του αρχικού μεγέθους
-  let sizes = [
-    {id: 'beakerContainer80', w: 320, h: 320},
-    {id: 'beakerContainer60', w: 240, h: 240},
-    {id: 'beakerContainer40', w: 160, h: 160}
-  ];
-  sizes.forEach(s => {
-    let instance = new Beaker({
-      containerId: s.id,
-      width: s.w,
-      height: s.h,
-      labels: ["P5.js", "P5.js", "P5.js"]
-    });
-    instance.initP5();
-    // Εφαρμογή αρχικών ρυθμίσεων (αν χρειάζεται)
-    instance.setOutlineImage(document.getElementById('outlineSelect').value);
-    instance.setFillColor(document.getElementById('fillColor').value);
-    instance.setFillLevel(parseFloat(document.getElementById('fillLevel').value));
-  });
 
   // Στοιχεία ελέγχου για το κύριο instance:
   const outlineSelect = document.getElementById('outlineSelect');
