@@ -5,7 +5,7 @@
   <title>Διαδραστική Προσομοίωση Αυτοκατάλυσης</title>
   <!-- Plotly για γραφήματα -->
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
-  <!-- p5.js για το drawer -->
+  <!-- p5.js για τη δημιουργία των συρταριών -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
     body {
@@ -13,7 +13,7 @@
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
     }
-    /* Overlay τίτλου με σκιές παρόμοιες με το acidebaseF */
+    /* Overlay τίτλου με σκιές όπως στο acidebaseF */
     #pageTitleOverlay {
       position: fixed;
       top: 5px;
@@ -41,20 +41,20 @@
       font-size: 11px;
       color: #333;
     }
-    /* Διάγραμμα στην κορυφή */
+    /* Διάγραμμα στην κορυφή με μειωμένο ύψος */
     #plot {
       width: 90%;
-      height: 500px;
-      margin: 60px auto 20px auto;
+      height: 200px;
+      margin: 60px auto 10px auto;
       box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
       border-radius: 8px;
       background-color: #fff;
     }
-    /* Στυλ για το δεξί συρτάρι (μόνο παραμέτροι) */
+    /* Στυλ για το δεξί συρτάρι (μόνο παραμέτρους) */
     .drawer {
       width: 300px;
       position: fixed;
-      right: -295px;
+      right: -270px; /* λιγότερη επικάλυψη */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -68,19 +68,19 @@
     .drawer.active {
       right: 0;
     }
-    /* Το κουμπί toggle τώρα έχει μικρότερο πλάτος */
+    /* Μεγαλύτερο toggle κουμπί με μικρότερη επικάλυψη */
     .toggleBtn {
       position: absolute;
-      right: calc(100% - 25px);
+      right: calc(100% - 35px);
       top: 50%;
       transform: translateY(-50%);
       background-color: #007bff;
       color: #fff;
       border: none;
-      padding: 5px 8px;
+      padding: 8px 10px;
       cursor: pointer;
       border-radius: 5px;
-      font-size: 16px;
+      font-size: 18px;
       z-index: 1100;
       transition: background-color 0.3s ease;
     }
@@ -100,10 +100,10 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* Τα κουμπιά και ο progress bar τοποθετούνται στο κάτω μέρος του γραφήματος */
+    /* Κουμπιά και progress bar στο κάτω μέρος του διαγράμματος */
     #controls-below {
       width: 90%;
-      margin: 0 auto 20px auto;
+      margin: 0 auto 10px auto;
       text-align: center;
     }
     #controls-below button {
@@ -140,6 +140,47 @@
       text-align: center;
       margin-top: 10px;
     }
+    /* Νέο κάτω συρτάρι για οδηγίες */
+    .drawer-bottom {
+      width: 90%;
+      position: fixed;
+      bottom: -250px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #fff;
+      color: #000;
+      padding: 20px;
+      box-sizing: border-box;
+      transition: bottom 0.3s ease-in-out;
+      border-top: 3px solid #007bff;
+      box-shadow: 4px -4px 8px rgba(0,0,0,0.5);
+      z-index: 1000;
+      border-radius: 8px 8px 0 0;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .drawer-bottom.active {
+      bottom: 0;
+    }
+    /* Toggle κουμπί για το κάτω συρτάρι */
+    #toggleInstructionsBtn {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+      z-index: 1100;
+      transition: background-color 0.3s ease;
+    }
+    #toggleInstructionsBtn:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -151,7 +192,7 @@
   <!-- Διάγραμμα -->
   <div id="plot"></div>
   
-  <!-- Κουμπιά και Progress bar στο κάτω μέρος του γραφήματος -->
+  <!-- Κουμπιά & Progress Bar στο κάτω μέρος του διαγράμματος -->
   <div id="controls-below">
     <button onclick="updateSimulation()">Ενημέρωση</button>
     <button onclick="resetSimulation()">Επαναφορά</button>
@@ -161,9 +202,9 @@
     <div id="errorMsg"></div>
   </div>
   
-  <!-- Το δεξί συρτάρι με τις παραμέτρους -->
+  <!-- Δεξί συρτάρι παραμέτρων -->
   <script>
-    // Κλάση Drawer (βασισμένη στην αρχική υλοποίηση του drawers.html)
+    // Κλάση Drawer (βασισμένη στο αρχικό παράδειγμα)
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -189,7 +230,7 @@
       }
     }
     
-    // Global μεταβλητές για animation της προσομοίωσης
+    // Global μεταβλητές για την animation της προσομοίωσης
     let simulationData = null;
     let animationInterval = null;
     let currentIndex = 0;
@@ -223,14 +264,14 @@
       const rate_auto = [], rate_red = [], rate_green = [];
       const totalSteps = Math.floor(tMax/dt);
       for(let step = 0; step <= totalSteps; step++){
-        let currentTime = step*dt;
+        let currentTime = step * dt;
         t.push(currentTime);
         conc_auto.push(A_auto);
         conc_red.push(A_red);
         conc_green.push(A_green);
-        rate_auto.push(k*A_auto*B_auto);
-        rate_red.push(k*A_red*B_red);
-        rate_green.push(k*A_green*B_green);
+        rate_auto.push(k * A_auto * B_auto);
+        rate_red.push(k * A_red * B_red);
+        rate_green.push(k * A_green * B_green);
         let result_auto = rk4Step(A_auto, B_auto, k, dt);
         A_auto = Math.max(result_auto.newA, 0);
         B_auto = result_auto.newB;
@@ -246,21 +287,21 @@
     
     function updateProgressBar(percentage) {
       const pb = document.getElementById('progressBarFill');
-      pb.style.width = percentage+"%";
-      pb.innerText = Math.floor(percentage)+"%";
+      pb.style.width = percentage + "%";
+      pb.innerText = Math.floor(percentage) + "%";
     }
     
     function updateGraph(currentIndex) {
       const { t, conc_auto, conc_red, conc_green, rate_auto, rate_red, rate_green } = simulationData;
       const maxRate = Math.max(findMax(rate_auto), findMax(rate_red), findMax(rate_green));
-      const normalize = arr => maxRate>0 ? arr.map(x=>x/maxRate) : arr;
-      const t_subset = t.slice(0,currentIndex);
-      const conc_auto_subset = conc_auto.slice(0,currentIndex);
-      const conc_red_subset = conc_red.slice(0,currentIndex);
-      const conc_green_subset = conc_green.slice(0,currentIndex);
-      const rate_auto_subset = rate_auto.slice(0,currentIndex);
-      const rate_red_subset = rate_red.slice(0,currentIndex);
-      const rate_green_subset = rate_green.slice(0,currentIndex);
+      const normalize = arr => maxRate > 0 ? arr.map(x => x / maxRate) : arr;
+      const t_subset = t.slice(0, currentIndex);
+      const conc_auto_subset = conc_auto.slice(0, currentIndex);
+      const conc_red_subset = conc_red.slice(0, currentIndex);
+      const conc_green_subset = conc_green.slice(0, currentIndex);
+      const rate_auto_subset = rate_auto.slice(0, currentIndex);
+      const rate_red_subset = rate_red.slice(0, currentIndex);
+      const rate_green_subset = rate_green.slice(0, currentIndex);
       const traces = [
         { x: t_subset, y: conc_auto_subset, name: 'Αυτοκατάλυση', line: { color: 'blue' } },
         { x: t_subset, y: normalize(rate_auto_subset), name: 'Ταχύτητα Αυτοκατάλυσης', yaxis: 'y2', line: { color: 'blue', dash: 'dot' } },
@@ -271,9 +312,9 @@
       ];
       const layout = {
         title: `Σύγκριση Αποτελεσμάτων (Μέγ. Χρόνος: ${document.getElementById('tMax').value}s)`,
-        xaxis: { title: 'Χρόνος (s)', range: [0, simulationData.t[simulationData.t.length-1]] },
-        yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value)*1.1] },
-        yaxis2: { title: 'Κανονικοποιημένη Ταχύτητα', overlaying: 'y', side: 'right', range: [0,1.1] },
+        xaxis: { title: 'Χρόνος (s)', range: [0, simulationData.t[simulationData.t.length - 1]] },
+        yaxis: { title: '[MnO₄⁻] (M)', range: [0, parseFloat(document.getElementById('A0').value) * 1.1] },
+        yaxis2: { title: 'Κανονικοποιημένη Ταχύτητα', overlaying: 'y', side: 'right', range: [0, 1.1] },
         legend: { orientation: 'h', x: 0, y: -0.2 },
         margin: { t: 50, b: 80 }
       };
@@ -281,18 +322,18 @@
     }
     
     function animateSimulation() {
-      if(!simulationData)return;
+      if (!simulationData) return;
       currentIndex = 0;
       const totalPoints = simulationData.t.length;
-      if(animationInterval) clearInterval(animationInterval);
-      animationInterval = setInterval(()=>{
+      if (animationInterval) clearInterval(animationInterval);
+      animationInterval = setInterval(() => {
         currentIndex++;
         updateGraph(currentIndex);
-        updateProgressBar((currentIndex/totalPoints)*100);
-        if(currentIndex>=totalPoints){
+        updateProgressBar((currentIndex / totalPoints) * 100);
+        if (currentIndex >= totalPoints) {
           clearInterval(animationInterval);
         }
-      },30);
+      }, 30);
     }
     
     function updateSimulation() {
@@ -301,8 +342,8 @@
       const C0_red = parseFloat(document.getElementById('C0_red').value);
       const C0_green = parseFloat(document.getElementById('C0_green').value);
       const tMax = parseFloat(document.getElementById('tMax').value);
-      if(isNaN(A0)||isNaN(k)||isNaN(C0_red)||isNaN(C0_green)||isNaN(tMax)||
-         A0<0||k<0||C0_red<0||C0_green<0||tMax<=0){
+      if (isNaN(A0) || isNaN(k) || isNaN(C0_red) || isNaN(C0_green) || isNaN(tMax) ||
+          A0 < 0 || k < 0 || C0_red < 0 || C0_green < 0 || tMax <= 0) {
         document.getElementById('errorMsg').innerText = "Παρακαλώ εισάγετε έγκυρες, θετικές τιμές.";
         return;
       }
@@ -362,7 +403,31 @@
     }
   </script>
   
-  <!-- Ενσωμάτωση p5 για το drawer -->
+  <!-- Νέο κάτω συρτάρι για οδηγίες -->
+  <script>
+    let instructionsDrawer;
+    function setupInstructionsDrawer() {
+      const instructionsHTML = `
+        <h3 style="margin-top:0;">Οδηγίες Χρήσης</h3>
+        <ul style="padding-left:20px;">
+          <li>Χρησιμοποιήστε τις παραμέτρους στο δεξί συρτάρι για να ρυθμίσετε την προσομοίωση.</li>
+          <li>Πατήστε "Ενημέρωση" για να ξεκινήσει η προσομοίωση με animation.</li>
+          <li>Τα κουμπιά "Επαναφορά" επαναφέρουν τις αρχικές τιμές.</li>
+          <li>Ο progress bar δείχνει την εξέλιξη της προσομοίωσης.</li>
+        </ul>
+      `;
+      instructionsDrawer = createDiv(instructionsHTML);
+      instructionsDrawer.addClass('drawer-bottom');
+    }
+    function toggleInstructionsDrawer() {
+      instructionsDrawer.toggleClass('active');
+    }
+  </script>
+  
+  <!-- Toggle κουμπί για το κάτω συρτάρι οδηγίας -->
+  <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες</button>
+  
+  <!-- Ενσωμάτωση p5 για τα drawers -->
   <script> new p5(); </script>
 </body>
 </html>
