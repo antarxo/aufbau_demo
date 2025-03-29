@@ -8,8 +8,9 @@
   <!-- p5.js για τα drawers -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
-    body {
+    html, body {
       margin: 0;
+      overflow: hidden; /* Αποφυγή κατακόρυφης μπάρας κυλίσεως */
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
     }
@@ -50,11 +51,11 @@
       border-radius: 8px;
       background-color: #fff;
     }
-    /* Στυλ για το δεξί συρτάρι (παράμετροι) */
+    /* Στυλ για το δεξί συρτάρι παραμέτρων */
     .drawer {
       width: 300px;
       position: fixed;
-      right: -260px; /* Κρύβει το συρτάρι, αφήνοντας εμφανές μόνο το toggle κουμπί */
+      right: -260px; /* Κρύβει πλήρως το συρτάρι, αφήνοντας εμφανές μόνο το toggle κουμπί */
       top: 100px;
       background-color: #444;
       color: #fff;
@@ -68,7 +69,7 @@
     .drawer.active {
       right: 0;
     }
-    /* Μεγαλύτερο toggle κουμπί για το δεξί συρτάρι */
+    /* Toggle κουμπί για το δεξί συρτάρι */
     .toggleBtn {
       position: absolute;
       left: 100%; /* Τοποθετείται ακριβώς δίπλα στο συρτάρι */
@@ -100,7 +101,7 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    /* Κάτω controls: progress bar και κουμπιά 15px κάτω από το διάγραμμα */
+    /* Κάτω controls: progress bar και κουμπιά, 15px κάτω από το διάγραμμα */
     #controls-below {
       width: 90%;
       margin: 15px auto 10px auto;
@@ -135,7 +136,7 @@
       background-color: #007bff;
       color: white;
       transition: background-color 0.3s ease;
-      box-shadow: 4px 4px 8px rgba(0,0,0,0.5); /* Σκιά στα κουμπιά */
+      box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
     }
     .buttons-container button:hover {
       background-color: #0056b3;
@@ -145,11 +146,11 @@
       text-align: center;
       margin-top: 10px;
     }
-    /* Κάτω συρτάρι οδηγιών: αυξημένο ύψος (+80) */
+    /* Κάτω συρτάρι οδηγιών: αυξημένο ύψος (+80px) */
     .drawer-bottom {
       width: 90%;
       position: fixed;
-      bottom: -420px; /* Κρυφό, με ύψος 420px */
+      bottom: -420px; /* Κρυφό, με συνολικό ύψος 420px */
       left: 50%;
       transform: translateX(-50%);
       background-color: #fff;
@@ -167,7 +168,7 @@
     .drawer-bottom.active {
       bottom: 0;
     }
-    /* Toggle κουμπί οδηγιών: τοποθετείται στο κάτω όριο της σελίδας ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού */
+    /* Toggle κουμπί οδηγιών: τοποθετείται στο κάτω όριο της σελίδας ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του drawer */
     #toggleInstructionsBtn {
       position: fixed;
       bottom: 0; /* Αρχικά στο κάτω όριο της σελίδας */
@@ -209,9 +210,9 @@
     <div id="errorMsg"></div>
   </div>
   
-  <!-- Δεξί συρτάρι παραμέτρων -->
+  <!-- Δεξί συρτάρι παραμέτρων (δημιουργείται από τη κλάση Drawer) -->
   <script>
-    // Κλάση Drawer (χρησιμοποιεί p5.js για createDiv και createButton)
+    // Χρησιμοποιούμε απλές DOM μεθόδους για δημιουργία του συρταριού, αντί για τις p5.js συναρτήσεις.
     class Drawer {
       constructor(options) {
         this.width = options.width || 300;
@@ -220,20 +221,24 @@
         this.content = options.content || '';
         this.buttonLabel = options.buttonLabel || '|||';
     
-        this.drawer = createDiv(this.content);
-        this.drawer.addClass('drawer');
-        this.drawer.style('top', this.top);
-        this.drawer.style('height', this.height);
-        this.drawer.style('width', `${this.width}px`);
+        this.drawer = document.createElement('div');
+        this.drawer.className = 'drawer';
+        this.drawer.style.top = this.top;
+        this.drawer.style.height = this.height;
+        this.drawer.style.width = `${this.width}px`;
+        this.drawer.innerHTML = this.content;
+        document.body.appendChild(this.drawer);
     
-        this.button = createButton(this.buttonLabel);
-        this.button.addClass('toggleBtn');
-        this.button.parent(this.drawer);
-        this.button.mousePressed(() => this.toggle());
+        this.button = document.createElement('button');
+        this.button.className = 'toggleBtn';
+        this.button.innerHTML = this.buttonLabel;
+        this.drawer.appendChild(this.button);
+    
+        this.button.addEventListener('click', () => this.toggle());
       }
     
       toggle() {
-        this.drawer.toggleClass('active');
+        this.drawer.classList.toggle('active');
       }
     }
     
@@ -243,7 +248,7 @@
     let currentIndex = 0;
     const dt = 1;
     
-    // Διορθωμένη συνάρτηση Runge-Kutta 4ης τάξης
+    // Συνάρτηση Runge-Kutta 4ης τάξης (διόρθωση του k4_A)
     function rk4Step(A, B, k, dt) {
       const f = (A, B) => k * A * B;
       const k1_A = -f(A, B), k1_B = f(A, B);
@@ -262,7 +267,7 @@
       return arr.reduce((max, x) => x > max ? x : max, -Infinity);
     }
     
-    // Υπολογισμός προσομοίωσης (για 3 συστήματα)
+    // Προσομοίωση για 3 συστήματα
     function simulate(A0, C0_auto, C0_red, C0_green, k, tMax) {
       let A_auto = A0, B_auto = C0_auto;
       let A_red = A0, B_red = C0_red;
@@ -375,8 +380,7 @@
   <!-- Στοιχεία εισόδου παραμέτρων στο δεξί συρτάρι -->
   <script>
     let simulationDrawer;
-    function setup() {
-      // Δημιουργία του δεξιού συρταριού
+    function initializeDrawersAndSimulation() {
       const controlsHTML = `
         <div class="control-group">
           <label for="A0" title="Αρχική συγκέντρωση [MnO₄⁻]">A₀ (M):</label>
@@ -431,9 +435,8 @@
       const toggleBtn = document.getElementById("toggleInstructionsBtn");
       if (instructionsDrawer) {
         instructionsDrawer.classList.toggle('active');
-        // Όταν ενεργοποιείται, το κουμπί μετακινείται ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού,
-        // αλλιώς επιστρέφει στο κάτω όριο της σελίδας.
         if (instructionsDrawer.classList.contains('active')) {
+          // Μετακινεί το κουμπί πάνω, ώστε το πάνω του όριο να ευθυγραμμίζεται με το άνω μέρος του συρταριού
           toggleBtn.style.bottom = instructionsDrawer.offsetHeight + "px";
         } else {
           toggleBtn.style.bottom = "0px";
@@ -442,14 +445,14 @@
     }
   </script>
   
-  <!-- Toggle κουμπί οδηγιών -->
-  <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες</button>
+  <!-- Toggle κουμπί οδηγιών με την ετικέτα και το σύμβολο "|||" -->
+  <button id="toggleInstructionsBtn" onclick="toggleInstructionsDrawer()">Οδηγίες |||</button>
   
   <!-- Εκκίνηση όλων των στοιχείων -->
   <script>
     window.onload = function() {
       setupInstructionsDrawer();
-      setup();
+      initializeDrawersAndSimulation();
     }
   </script>
 </body>
